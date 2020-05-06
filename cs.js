@@ -8,7 +8,9 @@
 //   - DONE: dummy audio only
 //   - DONE: debuglog
 //   - DONE: bodypix background mask
-//   - bodypix person mask
+//   - DONE: bodypix person mask
+//   - DONE: select update when bodypix ready
+//   - background iamge
 
 function main() {
   'use strict'
@@ -44,7 +46,6 @@ function main() {
                 <option value="camera">デバイス</option>
                 <option value="file">ファイル</option>
                 <option value="clock" selected="1">時計</option>
-                <option value="mask_background">背景をマスク</option>
               </select>
             </td>
             <td><span id="message_span">message</span></td>
@@ -173,6 +174,12 @@ function main() {
     }
     else if (select?.value === 'mask_background') {
       _showMessage('use bodypix');
+      _bodypix_setMask('room');
+      return _startBodyPixStream(withVideo, withAudio, constraints);
+    }
+    else if (select?.value === 'mask_person') {
+      _showMessage('use bodypix (person)');
+      _bodypix_setMask('person');
       return _startBodyPixStream(withVideo, withAudio, constraints);
     }
     else {
@@ -327,7 +334,24 @@ function main() {
     _bodyPixNet = net;
     _showMessage('bodyPix model loaded');
     _debuglog('bodyPix ready');
-    //updateUI();
+
+    _insertBoxypixOptions();
+  }
+
+
+  // <option value="mask_background">背景をマスク</option>
+  // <option value="mask_person">人物をマスク</option>
+  function _insertBoxypixOptions() {
+    const select = document.getElementById('video_type');
+    const option1 = document.createElement('option');
+    option1.value = 'mask_background';
+    option1.innerText = '背景をマスク';
+    select.appendChild(option1);
+
+    const option2 = document.createElement('option');
+    option2.value = 'mask_person';
+    option2.innerText = '人物をマスク';
+    select.appendChild(option2);
   }
 
   function _bodypix_setMask(type) {
@@ -336,8 +360,6 @@ function main() {
 
   function _startBodyPixStream(withVideo, withAudio, constraints) {
     return new Promise((resolve, reject) => {
-      let stream = null;
-
       if (!withVideo) {
         // NEED video
         reject('NEED video for Boxypix mask');
