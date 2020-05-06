@@ -11,8 +11,8 @@
 
 function main() {
   'use strict'
-  //const PRINT_DEBUG_LOG = true;
-  const PRINT_DEBUG_LOG = false;
+  const PRINT_DEBUG_LOG = true;
+  //const PRINT_DEBUG_LOG = false;
 
   if (navigator.mediaDevices._getUserMedia !== undefined) return;
   const video = document.createElement('video');
@@ -43,6 +43,7 @@ function main() {
                 <option value="camera">カメラ</option>
                 <option value="file">ファイル</option>
                 <option value="composite" selected="1">時計</option>
+                <option value="mask_backbround">背景をマスク</option>
               </select>
             </td>
             <td><span id="message_span">message</span></td>
@@ -169,6 +170,10 @@ function main() {
       _showMessage('use canvas');
       return _startCanvasStream(withVideo, withAudio);
     }
+    else if (select?.value === 'mask_backbround') {
+      _showMessage('use bodypix');
+      return _startBodyPixStream(withVideo, withAudio, constraints);
+    }
     else {
       _showMessage('use camera');
       return navigator.mediaDevices._getUserMedia(constraints);
@@ -285,7 +290,7 @@ function main() {
           stream.addTrack(audioTrack);
         }
         else {
-          console.warn('WebAudio error, but skip');
+          console.warn('WARN: WebAudio error, but skip');
         }
       }
 
@@ -307,11 +312,164 @@ function main() {
     }
   }
 
+  // ------- bodypix -------
+  let _bodyPixNet = null;
+  //let animationId = null;
+  //let contineuAnimation = false;
+  let _bodyPixMask = null;
+  let _segmentTimerId = null;
+  //let isConnected = false;
+  let _maskType = 'room';
+
+  async function _bodypix_loadModel() {
+    const net = await bodyPix.load(/** optional arguments, see below **/);
+    _bodyPixNet = net;
+    _showMessage('bodyPix model loaded');
+    _debuglog('bodyPix ready');
+    //updateUI();
+  }
+
+  function _bodypix_setMask(type) {
+    _maskType = type;
+  }
+
+  function _startBodyPixStream(withVideo, withAudio, constraints) {
+    return new Promise((resolve, reject) => {
+      let stream = null;
+
+      if ((!withVideo) && (!withAudio)) {
+        // Nothing
+        reject('NO video/audio specified');
+      }
+
+      //reject('NOT SUPPORTED YET');
+
+      //_debuglog('_startBodyPixStream() video:', video);
+      navigator.mediaDevices._getUserMedia(constraints).
+        then(async (stream) => {
+          video.srcObject = stream;
+          video.width = 640;
+          video.height = 480;
+          await video.play().catch(err => console.error('local play ERROR:', err));
+          video.volume = 0.0;
+
+          _clearCanvas();
+          requestAnimationFrame(_updateCanvasWithMask);
+          const canvasStream = canvas.captureStream(10);
+          if (!canvasStream) {
+            reject('canvas Capture ERROR');
+          }
+          keepAnimation = true;
+          _bodypix_updateSegment();
+          const videoTrack = canvasStream.getVideoTracks()[0];
+          if (videoTrack) {
+            videoTrack._stop = videoTrack.stop;
+            videoTrack.stop = function () {
+              _debuglog('camvas stream stop');
+              keepAnimation = false;
+              videoTrack._stop();
+              stream.getTracks().forEach(track => {
+                track.stop();
+              });
+            };
+          }
+
+          resolve(canvasStream);
+        })
+        .catch(err => {
+          console.error('media ERROR:', err);
+          reject(err);
+        });
+    });
+  }
+
+  function _updateCanvasWithMask() {
+    _drawCanvas(video);
+    if (keepAnimation) {
+      window.requestAnimationFrame(_updateCanvasWithMask);
+    }
+  }
+
+  function _drawCanvas(srcElement) {
+    const opacity = 1.0;
+    const flipHorizontal = false;
+    //const maskBlurAmount = 0;
+    const maskBlurAmount = 3;
+
+    // Draw the mask image on top of the original image onto a canvas.
+    // The colored part image will be drawn semi-transparent, with an opacity of
+    // 0.7, allowing for the original image to be visible under.
+    bodyPix.drawMask(
+      canvas, srcElement, _bodyPixMask, opacity, maskBlurAmount,
+      flipHorizontal
+    );
+  }
+
+  function _bodypix_updateSegment() {
+    const segmeteUpdateTime = 10; // ms
+    if (!_bodyPixNet) {
+      console.warn('bodyPix net NOT READY');
+      return;
+    }
+
+    const option = {
+      flipHorizontal: false,
+      internalResolution: 'medium',
+      segmentationThreshold: 0.7,
+      maxDetections: 4,
+      scoreThreshold: 0.5,
+      nmsRadius: 20,
+      minKeypointScore: 0.3,
+      refineSteps: 10
+    };
+
+    if (_maskType === 'none') {
+      _bodyPixMask = null;
+      if (keepAnimation) {
+        _segmentTimerId = setTimeout(_bodypix_updateSegment, segmeteUpdateTime);
+      }
+      return;
+    }
+
+    _bodyPixNet.segmentPerson(video, option)
+      .then(segmentation => {
+        if (_maskType === 'room') {
+          const fgColor = { r: 0, g: 0, b: 0, a: 0 };
+          const bgColor = { r: 127, g: 127, b: 127, a: 255 };
+          const personPartImage = bodyPix.toMask(segmentation, fgColor, bgColor);
+          _bodyPixMask = personPartImage;
+        }
+        else if (_maskType === 'person') {
+          const fgColor = { r: 127, g: 127, b: 127, a: 255 };
+          const bgColor = { r: 0, g: 0, b: 0, a: 0 };
+          const roomPartImage = bodyPix.toMask(segmentation, fgColor, bgColor);
+          _bodyPixMask = roomPartImage;
+        }
+        else {
+          _bodyPixMask = null;
+        }
+
+        if (keepAnimation) {
+          _segmentTimerId = setTimeout(_bodypix_updateSegment, segmeteUpdateTime);
+        }
+      })
+      .catch(err => {
+        console.error('segmentPerson ERROR:', err);
+      })
+  }
+
+  // ------- bodypix -------
+
+
   // -----------------
   _debuglog('cs main()');
   const insertPoint = document.body;
   _insertPanel(insertPoint);
   _replaceGetUserMedia();
+
+  // ------- bodypix -------
+  //_bodypix_loadModel();
+  setTimeout(_bodypix_loadModel, 1000); // wait until boxyPix ready;
 }
 
 main()
