@@ -10,7 +10,8 @@
 //   - DONE: bodypix background mask
 //   - DONE: bodypix person mask
 //   - DONE: select update when bodypix ready
-//   - background iamge
+//   - DONE: background image
+//   - canvas&image size variable
 
 function main() {
   'use strict'
@@ -20,10 +21,16 @@ function main() {
   if (navigator.mediaDevices._getUserMedia !== undefined) return;
   const video = document.createElement('video');
   const canvas = document.createElement('canvas');
+  const canvasFront = document.createElement('canvas');
+  const img = document.createElement('img');
   //canvas.width = 1280;
   //canvas.height = 720;
   canvas.width = 640;
   canvas.height = 480;
+  canvasFront.width = 640;
+  canvasFront.height = 480;
+  img.width = 640;
+  img.height = 480;
   let keepAnimation = false;
   let keepSound = false;
   const canvasCtx = canvas.getContext('2d');
@@ -40,7 +47,7 @@ function main() {
         <table>
           <tr>
             <td><label for="video_file">動画</label></td>
-            <td><input type="file" accept="video/mp4,image/*" id="video_file"></td>
+            <td><input type="file" accept="video/mp4,video/webm" id="video_file"></td>
             <td>
               <select id="video_type" title="切り替え後はいったんカメラをオフ→オンにする必要があります。">
                 <option value="camera">デバイス</option>
@@ -50,6 +57,12 @@ function main() {
             </td>
             <td><span id="message_span">message</span></td>
           </tr>
+          <tr>
+          <td><label for="image_file">背景</label></td>
+          <td><input type="file" accept="image/*" id="image_file"></td>
+          <td>&nbsp;</td>
+          <td>&nbsp;</td>
+        </tr>
           <!--
           <tr>
             <td><label for="afile">効果音</label></td>
@@ -63,6 +76,10 @@ function main() {
 
       node.querySelector('#video_file').addEventListener('change', (evt) => {
         _startVideoPlay();
+      }, false);
+
+      node.querySelector('#image_file').addEventListener('change', (evt) => {
+        _loadImage();
       }, false);
     } catch (e) {
       console.error('_insertPanel() ERROR:', e);
@@ -118,6 +135,17 @@ function main() {
         _showMessage('metadata loaded');
         _setVideoType('file');
       };
+    }
+  }
+
+  function _loadImage() {
+    const imageFile = document.getElementById('image_file');
+    const file = (imageFile.files && imageFile.files.length) ? imageFile.files[0] : null;
+    if (file && file.type.startsWith('image/')) {
+      _debuglog('load image:', file.name);
+      _showMessage('load image');
+      const url = window.URL.createObjectURL(file);
+      img.src = url;
     }
   }
 
@@ -182,6 +210,11 @@ function main() {
       _bodypix_setMask('person');
       return _startBodyPixStream(withVideo, withAudio, constraints);
     }
+    else if (select?.value === 'mask_image') {
+      _showMessage('use bodypix (mask image)');
+      _bodypix_setMask('back_image');
+      return _startBodyPixStream(withVideo, withAudio, constraints);
+    }
     else {
       _showMessage('use device');
       return navigator.mediaDevices._getUserMedia(constraints);
@@ -208,6 +241,9 @@ function main() {
     else if (constraints.video?.height) {
       canvas.height = constraints.video.height;
     }
+
+    canvasFront.width = canvas.width;
+    canvasFront.height = canvas.height;
 
     _debuglog('canvas width,height=', canvas.width, canvas.height);
   }
@@ -328,6 +364,7 @@ function main() {
   let _segmentTimerId = null;
   //let isConnected = false;
   let _maskType = 'room';
+  let _backPixMask = null;
 
   async function _bodypix_loadModel() {
     const net = await bodyPix.load(/** optional arguments, see below **/);
@@ -339,19 +376,25 @@ function main() {
   }
 
 
-  // <option value="mask_background">背景をマスク</option>
-  // <option value="mask_person">人物をマスク</option>
+  // <option value="mask_background">背景を塗りつぶし</option>
+  // <option value="mask_image">背景を画像でマスク</option>
+  // <option value="mask_person">人物を塗りつぶし</option>
   function _insertBoxypixOptions() {
     const select = document.getElementById('video_type');
     const option1 = document.createElement('option');
     option1.value = 'mask_background';
-    option1.innerText = '背景をマスク';
+    option1.innerText = '背景を塗りつぶし';
     select.appendChild(option1);
 
     const option2 = document.createElement('option');
-    option2.value = 'mask_person';
-    option2.innerText = '人物をマスク';
+    option2.value = 'mask_image';
+    option2.innerText = '背景を画像でマスク';
     select.appendChild(option2);
+
+    const option3 = document.createElement('option');
+    option3.value = 'mask_person';
+    option3.innerText = '人物を塗りつぶし';
+    select.appendChild(option3);
   }
 
   function _bodypix_setMask(type) {
@@ -418,7 +461,15 @@ function main() {
   }
 
   function _updateCanvasWithMask() {
-    _drawCanvas(video);
+    if (_maskType === 'back_image') {
+      _drawBack(img);
+      _drawFront(video);
+      _imposeFront();
+    }
+    else {
+      _drawCanvas(video);
+    }
+
     if (keepAnimation) {
       window.requestAnimationFrame(_updateCanvasWithMask);
     }
@@ -427,8 +478,8 @@ function main() {
   function _drawCanvas(srcElement) {
     const opacity = 1.0;
     const flipHorizontal = false;
-    //const maskBlurAmount = 0;
-    const maskBlurAmount = 3;
+    const maskBlurAmount = 0;
+    //const maskBlurAmount = 3;
 
     // Draw the mask image on top of the original image onto a canvas.
     // The colored part image will be drawn semi-transparent, with an opacity of
@@ -437,6 +488,34 @@ function main() {
       canvas, srcElement, _bodyPixMask, opacity, maskBlurAmount,
       flipHorizontal
     );
+  }
+
+  function _drawFront(srcElement) {
+    const opacity = 1;
+    const flipHorizontal = false;
+    const maskBlurAmount = 0;
+
+    bodyPix.drawMask(
+      canvasFront, srcElement, _bodyPixMask,
+      opacity, maskBlurAmount,
+      flipHorizontal);
+  }
+
+  function _drawBack(srcElement) {
+    const opacity = 1;
+    const flipHorizontal = false;
+    const maskBlurAmount = 0;
+
+    bodyPix.drawMask(
+      canvas, srcElement, _backPixMask,
+      opacity, maskBlurAmount,
+      flipHorizontal);
+  }
+
+  function _imposeFront() {
+    const ctx = canvas.getContext('2d');
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.drawImage(canvasFront, 0, 0);
   }
 
   function _bodypix_updateSegment() {
@@ -459,6 +538,7 @@ function main() {
 
     if (_maskType === 'none') {
       _bodyPixMask = null;
+      _backPixMask = null;
       if (keepAnimation) {
         _segmentTimerId = setTimeout(_bodypix_updateSegment, segmeteUpdateTime);
       }
@@ -472,15 +552,28 @@ function main() {
           const bgColor = { r: 127, g: 127, b: 127, a: 255 };
           const personPartImage = bodyPix.toMask(segmentation, fgColor, bgColor);
           _bodyPixMask = personPartImage;
+          _backPixMask = null;
         }
         else if (_maskType === 'person') {
           const fgColor = { r: 127, g: 127, b: 127, a: 255 };
           const bgColor = { r: 0, g: 0, b: 0, a: 0 };
           const roomPartImage = bodyPix.toMask(segmentation, fgColor, bgColor);
           _bodyPixMask = roomPartImage;
+          _backPixMask = null;
+        }
+        else if (_maskType === 'back_image') {
+          const fgColor = { r: 0, g: 0, b: 0, a: 0 };
+          const bgColor = { r: 0, g: 0, b: 0, a: 255 };
+          const personPartImage = bodyPix.toMask(segmentation, fgColor, bgColor);
+          _bodyPixMask = personPartImage;
+
+          const fgColor2 = { r: 0, g: 0, b: 0, a: 255 };
+          const bgColor2 = { r: 0, g: 0, b: 0, a: 0 };
+          _backPixMask = bodyPix.toMask(segmentation, fgColor2, bgColor2);
         }
         else {
           _bodyPixMask = null;
+          _backPixMask = null;
         }
 
         if (keepAnimation) {
