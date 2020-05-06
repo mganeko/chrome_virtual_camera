@@ -5,7 +5,7 @@ console.log('cs.js');
 //   - DONE: clear canvas at start
 //   - DONE: setup canvas size
 //   - DONE: dummy video with dummy audio
-//   - dummy audio only
+//   - DONE: dummy audio only
 //   - bodybipx mask
 
 function main() {
@@ -29,7 +29,8 @@ function main() {
   function _insertPanel(node) {
     try {
       const html1 =
-        `<table style="border: 1px solid blue;">
+        `<div style="border: 1px solid blue;">
+        <table>
           <tr>
             <td><label for="video_file">動画</label></td>
             <td><input type="file" accept="video/mp4,image/*" id="video_file"></td>
@@ -49,7 +50,8 @@ function main() {
             <td><span id="message2_span"><span></td>
           </tr>
           -->
-        </table>`;
+        </table>
+        </div>`;
       node.insertAdjacentHTML('beforeend', html1);
 
       node.querySelector('#video_file').addEventListener('change', (evt) => {
@@ -151,80 +153,11 @@ function main() {
     // --- start media ---
     if (select?.value === 'file') {
       _showMessage('use video');
-      return new Promise((resolve, reject) => {
-        video.play()
-          .then(() => {
-            const stream = video.captureStream();
-            if (!stream) { reject('video Capture ERROR'); }
-
-            if ((!withAudio) && (stream.getAudioTracks().length > 0)) {
-              // remove audio track
-              console.log('remove audio track from video');
-              const audioTrack = stream.getAudioTracks()[0];
-              stream.removeTrack(audioTrack);
-              audioTrack.stop();
-            }
-
-            resolve(stream);
-          }).
-          catch(err => reject(err));
-      });
+      return _startVideoFileStream(withVideo, withAudio);
     }
     else if (select?.value === 'composite') {
       _showMessage('use canvas');
       return _startCanvasStream(withVideo, withAudio);
-      /*--
-      return new Promise((resolve, reject) => {
-        _clearCanvas();
-        requestAnimationFrame(_updateCanvas);
-        const stream = canvas.captureStream(10);
-        if (!stream) {
-          reject('canvas Capture ERROR');
-        }
-        if (withAudio) {
-          if (!audioCtx) {
-            audioCtx = new AudioContext();
-          }
-          audioOutput = audioCtx.createMediaStreamDestination();
-          audioGain = audioCtx.createGain();
-          audioGain.gain.value = 0.2;
-          audioGain.connect(audioOutput);
-
-          keepSound = true;
-          _nextAudioNode();
-          console.log('start webAudio');
-
-          const audioTrack = audioOutput.stream.getAudioTracks()[0];
-          if (audioTrack) {
-            if (!audioTrack._stop) {
-              audioTrack._stop = audioTrack.stop;
-              audioTrack.stop = function () {
-                console.log('webaudio stop');
-                keepSound = false;
-                audioTrack._stop();
-              };
-            }
-            stream.addTrack(audioTrack);
-          }
-          else {
-            console.warn('WebAudio error, but skip');
-          }
-        }
-        keepAnimation = true;
-
-        const videoTrack = stream.getVideoTracks()[0];
-        if (videoTrack) {
-          videoTrack._stop = videoTrack.stop;
-          videoTrack.stop = function () {
-            console.log('camvas stream stop');
-            keepAnimation = false;
-            videoTrack._stop();
-          };
-        }
-
-        resolve(stream);
-      });
-      ---*/
     }
     else {
       _showMessage('use camera');
@@ -256,21 +189,73 @@ function main() {
     console.log('canvas width,height=', canvas.width, canvas.height);
   }
 
+  function _startVideoFileStream(withVideo, withAudio) {
+    return new Promise((resolve, reject) => {
+      video.play()
+        .then(() => {
+          const stream = video.captureStream();
+          if (!stream) { reject('video Capture ERROR'); }
+
+          if ((!withVideo) && (stream.getVideoTracks().length > 0)) {
+            // remove video track
+            console.log('remove video track from video');
+            const videoTrack = stream.getVideoTracks()[0];
+            stream.removeTrack(videoTrack);
+            videoTrack.stop();
+          }
+
+          if ((!withAudio) && (stream.getAudioTracks().length > 0)) {
+            // remove audio track
+            console.log('remove audio track from video');
+            const audioTrack = stream.getAudioTracks()[0];
+            stream.removeTrack(audioTrack);
+            audioTrack.stop();
+          }
+
+          resolve(stream);
+        }).
+        catch(err => reject(err));
+    });
+  }
+
   function _startCanvasStream(withVideo, withAudio) {
     return new Promise((resolve, reject) => {
-      _clearCanvas();
-      requestAnimationFrame(_updateCanvas);
-      const stream = canvas.captureStream(10);
-      if (!stream) {
-        reject('canvas Capture ERROR');
+      let stream = null;
+
+      if ((!withVideo) && (!withAudio)) {
+        // Nothing
+        reject('NO video/audio specified');
       }
+
+      if (withVideo) {
+        _clearCanvas();
+        requestAnimationFrame(_updateCanvas);
+        stream = canvas.captureStream(10);
+        if (!stream) {
+          reject('canvas Capture ERROR');
+        }
+        keepAnimation = true;
+        const videoTrack = stream.getVideoTracks()[0];
+        if (videoTrack) {
+          videoTrack._stop = videoTrack.stop;
+          videoTrack.stop = function () {
+            console.log('camvas stream stop');
+            keepAnimation = false;
+            videoTrack._stop();
+          };
+        }
+      }
+      else {
+        stream = new MediaStream();
+      }
+
       if (withAudio) {
         if (!audioCtx) {
           audioCtx = new AudioContext();
         }
         audioOutput = audioCtx.createMediaStreamDestination();
         audioGain = audioCtx.createGain();
-        audioGain.gain.value = 0.2;
+        audioGain.gain.value = 0.2; // Gain (0 - 1)
         audioGain.connect(audioOutput);
 
         keepSound = true;
@@ -293,17 +278,6 @@ function main() {
           console.warn('WebAudio error, but skip');
         }
       }
-      keepAnimation = true;
-
-      const videoTrack = stream.getVideoTracks()[0];
-      if (videoTrack) {
-        videoTrack._stop = videoTrack.stop;
-        videoTrack.stop = function () {
-          console.log('camvas stream stop');
-          keepAnimation = false;
-          videoTrack._stop();
-        };
-      }
 
       resolve(stream);
     });
@@ -325,10 +299,8 @@ function main() {
 
   // -----------------
   console.log('cs main()');
-
   const insertPoint = document.body;
   _insertPanel(insertPoint);
-
   _replaceGetUserMedia();
 }
 
