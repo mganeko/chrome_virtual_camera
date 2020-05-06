@@ -1,4 +1,4 @@
-console.log('cs.js');
+//console.info('cs.js');
 
 // TODO:
 //   - DONE: stop Animation
@@ -6,10 +6,14 @@ console.log('cs.js');
 //   - DONE: setup canvas size
 //   - DONE: dummy video with dummy audio
 //   - DONE: dummy audio only
+//   - debuglog
 //   - bodybipx mask
 
 function main() {
   'use strict'
+  //const PRINT_DEBUG_LOG = true;
+  const PRINT_DEBUG_LOG = false;
+
   if (navigator.mediaDevices._getUserMedia !== undefined) return;
   const video = document.createElement('video');
   const canvas = document.createElement('canvas');
@@ -68,7 +72,7 @@ function main() {
       return;
     }
 
-    console.log('replacing GUM');
+    _debuglog('replacing GUM');
     _showMessage('replace GUM');
 
     navigator.mediaDevices._getUserMedia = navigator.mediaDevices.getUserMedia
@@ -79,6 +83,12 @@ function main() {
     const span = document.getElementById('message_span');
     if (span) {
       span.innerHTML = str;
+    }
+  }
+
+  function _debuglog(var_args) {
+    if (PRINT_DEBUG_LOG) {
+      console.log(...arguments);
     }
   }
 
@@ -93,7 +103,7 @@ function main() {
     const videoFile = document.getElementById('video_file');
     const file = (videoFile.files && videoFile.files.length) ? videoFile.files[0] : null;
     if (file && file.type.startsWith('video/')) {
-      console.log('playback video:', file.name);
+      _debuglog('playback video:', file.name);
       _showMessage('start play');
       const url = window.URL.createObjectURL(file);
       video.loop = true;
@@ -186,7 +196,7 @@ function main() {
       canvas.height = constraints.video.height;
     }
 
-    console.log('canvas width,height=', canvas.width, canvas.height);
+    _debuglog('canvas width,height=', canvas.width, canvas.height);
   }
 
   function _startVideoFileStream(withVideo, withAudio) {
@@ -198,7 +208,7 @@ function main() {
 
           if ((!withVideo) && (stream.getVideoTracks().length > 0)) {
             // remove video track
-            console.log('remove video track from video');
+            _debuglog('remove video track from video');
             const videoTrack = stream.getVideoTracks()[0];
             stream.removeTrack(videoTrack);
             videoTrack.stop();
@@ -206,7 +216,7 @@ function main() {
 
           if ((!withAudio) && (stream.getAudioTracks().length > 0)) {
             // remove audio track
-            console.log('remove audio track from video');
+            _debuglog('remove audio track from video');
             const audioTrack = stream.getAudioTracks()[0];
             stream.removeTrack(audioTrack);
             audioTrack.stop();
@@ -239,7 +249,7 @@ function main() {
         if (videoTrack) {
           videoTrack._stop = videoTrack.stop;
           videoTrack.stop = function () {
-            console.log('camvas stream stop');
+            _debuglog('camvas stream stop');
             keepAnimation = false;
             videoTrack._stop();
           };
@@ -260,14 +270,14 @@ function main() {
 
         keepSound = true;
         _nextAudioNode();
-        console.log('start webAudio');
+        _debuglog('start webAudio');
 
         const audioTrack = audioOutput.stream.getAudioTracks()[0];
         if (audioTrack) {
           if (!audioTrack._stop) {
             audioTrack._stop = audioTrack.stop;
             audioTrack.stop = function () {
-              console.log('webaudio stop');
+              _debuglog('webaudio stop');
               keepSound = false;
               audioTrack._stop();
             };
@@ -298,7 +308,7 @@ function main() {
   }
 
   // -----------------
-  console.log('cs main()');
+  _debuglog('cs main()');
   const insertPoint = document.body;
   _insertPanel(insertPoint);
   _replaceGetUserMedia();

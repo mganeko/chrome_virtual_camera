@@ -1,36 +1,43 @@
 async function load() {
-  console.log('loader load()');
-  console.log('GUM2:', navigator.mediaDevices.getUserMedia);
+  _loaderlog('loader load()');
+  _loaderlog('GUM2:', navigator.mediaDevices.getUserMedia);
   const res = await fetch(chrome.runtime.getURL('cs.js'), { method: 'GET' })
-  console.log('loader load() after fetch');
+  _loaderlog('loader load() after fetch');
   const js = await res.text()
-  console.log('loader load() after res.text()');
+  _loaderlog('loader load() after res.text()');
   const script = document.createElement('script')
   script.textContent = js
-  console.log('loader load() after createElement(script');
+  _loaderlog('loader load() after createElement(script');
   document.body.insertBefore(script, document.body.firstChild)
-  console.log('loader load() END');
+  _loaderlog('loader load() END');
+}
+
+const _PRINT_LOADER_LOG = false;
+function _loaderlog(var_args) {
+  if (_PRINT_LOADER_LOG) {
+    console.log(...arguments);
+  }
 }
 
 // window.addEventListener('load', (evt) => {
-//   console.log('event load'); // 元のindex.html の中の処理より後に呼ばれる
+//   _loaderlog('event load'); // 元のindex.html の中の処理より後に呼ばれる
 //   load()
 // }, false)
 
 window.addEventListener('load', async (evt) => {
-  console.log('event load'); // 元のindex.html の中の処理より後に呼ばれる
+  _loaderlog('event load'); // 元のindex.html の中の処理より後に呼ばれる
   await load()
 }, true) // use capture
 
-console.log('loader.js');
+_loaderlog('loader.js');
 
 if (!navigator.mediaDevices._originalGetUserMedia) {
-  console.log('loader replacing');
+  _loaderlog('loader replacing');
   navigator.mediaDevices._originalGetUserMedia = navigator.mediaDevices.getUserMedia;
-  console.log('GUM0:', navigator.mediaDevices.getUserMedia);
-  navigator.mediaDevices.getUserMedia = null; //function () { console.log('NONE GUM') };
+  _loaderlog('GUM0:', navigator.mediaDevices.getUserMedia);
+  navigator.mediaDevices.getUserMedia = null; //function () { _loaderlog('NONE GUM') };
   // ここで入れ替えても、もとのindex.htmlでは置き換わっていない
-  console.log('GUM1:', navigator.mediaDevices.getUserMedia);
+  _loaderlog('GUM1:', navigator.mediaDevices.getUserMedia);
 }
 
 
