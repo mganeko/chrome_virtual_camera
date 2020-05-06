@@ -1,0 +1,37 @@
+{
+  "manifest_version": 2,
+  "name": "gUM injection",
+  "version": "1.0",
+  "description": "getUserMedia() を差し替えて、時計や動画ファイルを利用する",
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://sfu.talkin.info/*",
+        "http://localhost:*/*",
+        "http://127.0.0.1:*/*",
+        "https://mganeko.github.io/*",
+        "https://meet.google.com/*",
+        "https://sora-labo.shiguredo.jp/*"
+      ],
+      "js": [
+        "loader.js"
+      ],
+      "run_at": "document_start"
+    }
+  ],
+  "permissions": [
+    "https://sfu.talkin.info/",
+    "https://localhost:*/",
+    "https://127.0.0.1:*/",
+    "https://mganeko.github.io/",
+    "https://meet.google.com/",
+    "https://sora-labo.shiguredo.jp/"
+  ],
+  "web_accessible_resources": [
+    "cs.js"
+  ]
+}
