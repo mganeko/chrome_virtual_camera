@@ -7,7 +7,8 @@
 //   - DONE: dummy video with dummy audio
 //   - DONE: dummy audio only
 //   - DONE: debuglog
-//   - bodybipx mask
+//   - DONE: bodypix background mask
+//   - bodypix person mask
 
 function main() {
   'use strict'
@@ -40,10 +41,10 @@ function main() {
             <td><input type="file" accept="video/mp4,image/*" id="video_file"></td>
             <td>
               <select id="video_type" title="切り替え後はいったんカメラをオフ→オンにする必要があります。">
-                <option value="camera">カメラ</option>
+                <option value="camera">デバイス</option>
                 <option value="file">ファイル</option>
-                <option value="composite" selected="1">時計</option>
-                <option value="mask_backbround">背景をマスク</option>
+                <option value="clock" selected="1">時計</option>
+                <option value="mask_background">背景をマスク</option>
               </select>
             </td>
             <td><span id="message_span">message</span></td>
@@ -163,19 +164,19 @@ function main() {
 
     // --- start media ---
     if (select?.value === 'file') {
-      _showMessage('use video');
+      _showMessage('use video file');
       return _startVideoFileStream(withVideo, withAudio);
     }
-    else if (select?.value === 'composite') {
-      _showMessage('use canvas');
+    else if (select?.value === 'clock') {
+      _showMessage('use canvas for clock');
       return _startCanvasStream(withVideo, withAudio);
     }
-    else if (select?.value === 'mask_backbround') {
+    else if (select?.value === 'mask_background') {
       _showMessage('use bodypix');
       return _startBodyPixStream(withVideo, withAudio, constraints);
     }
     else {
-      _showMessage('use camera');
+      _showMessage('use device');
       return navigator.mediaDevices._getUserMedia(constraints);
     }
   }
@@ -337,9 +338,9 @@ function main() {
     return new Promise((resolve, reject) => {
       let stream = null;
 
-      if ((!withVideo) && (!withAudio)) {
-        // Nothing
-        reject('NO video/audio specified');
+      if (!withVideo) {
+        // NEED video
+        reject('NEED video for Boxypix mask');
       }
 
       //reject('NOT SUPPORTED YET');
@@ -372,6 +373,17 @@ function main() {
                 track.stop();
               });
             };
+          }
+
+          // --- for audio ---
+          if (withAudio) {
+            const audioTrack = stream.getAudioTracks()[0];
+            if (audioTrack) {
+              canvasStream.addTrack(audioTrack);
+            }
+            else {
+              _debuglog('WARN: NO audio in device stream');
+            }
           }
 
           resolve(canvasStream);
