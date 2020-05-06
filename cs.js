@@ -6,7 +6,7 @@
 //   - DONE: setup canvas size
 //   - DONE: dummy video with dummy audio
 //   - DONE: dummy audio only
-//   - debuglog
+//   - DONE: debuglog
 //   - bodybipx mask
 
 function main() {
