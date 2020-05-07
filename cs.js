@@ -43,8 +43,9 @@ function main() {
   function _insertPanel(node) {
     try {
       const html1 =
-        `<div style="border: 1px solid blue;">
-        <table>
+        `<div id="gum_panel" style="border: 1px solid blue; position: absolute; left:2px; top:2px;  z-index: 1; background-color: rgba(192, 250, 250, 0.5);">
+        <div id="gum_pannel_button">[+]</div>
+        <table id="gum_control" style="display: none;">
           <tr>
             <td><label for="video_file">動画</label></td>
             <td><input type="file" accept="video/mp4,video/webm" id="video_file"></td>
@@ -81,8 +82,26 @@ function main() {
       node.querySelector('#image_file').addEventListener('change', (evt) => {
         _loadImage();
       }, false);
+    
+      node.querySelector('#gum_pannel_button').addEventListener('click', (evt) => {
+        _debuglog('pannel open/close');
+        _openClosePanel();
+      })
     } catch (e) {
       console.error('_insertPanel() ERROR:', e);
+    }
+  }
+
+  let panelVisible = false;
+  function _openClosePanel() {
+    panelVisible = (! panelVisible);
+    if (panelVisible) {
+      document.getElementById('gum_control').style.display = 'block';
+      document.getElementById('gum_pannel_button').innerText = '[-]';
+    }
+    else {
+      document.getElementById('gum_control').style.display = 'none';
+      document.getElementById('gum_pannel_button').innerText = '[+]';
     }
   }
 
@@ -395,6 +414,9 @@ function main() {
     option3.value = 'mask_person';
     option3.innerText = '人物を塗りつぶし';
     select.appendChild(option3);
+
+
+    select.value = 'mask_background';
   }
 
   function _bodypix_setMask(type) {
