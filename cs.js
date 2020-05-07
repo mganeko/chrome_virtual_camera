@@ -11,7 +11,7 @@
 //   - DONE: bodypix person mask
 //   - DONE: select update when bodypix ready
 //   - DONE: background image
-//   - canvas&image size variable
+//   - DONE: canvas&image size variable
 
 function main() {
   'use strict'
@@ -43,8 +43,8 @@ function main() {
   function _insertPanel(node) {
     try {
       const html1 =
-        `<div id="gum_panel" style="border: 1px solid blue; position: absolute; left:2px; top:2px;  z-index: 2001; background-color: rgba(192, 250, 250, 0.5);">
-        <div id="gum_pannel_button">[+]</div>
+        `<div id="gum_panel" style="border: 1px solid blue; position: absolute; left:2px; top:2px;  z-index: 2001; background-color: rgba(192, 250, 192, 0.5);">
+        <div><span id="gum_pannel_button">[+]</span><span id="gum_position_button">[_]</span></div>
         <table id="gum_control" style="display: none;">
           <tr>
             <td><label for="video_file">動画</label></td>
@@ -56,14 +56,12 @@ function main() {
                 <option value="clock" selected="1">時計</option>
               </select>
             </td>
-            <td><span id="message_span">message</span></td>
           </tr>
           <tr>
-          <td><label for="image_file">背景</label></td>
-          <td><input type="file" accept="image/*" id="image_file"></td>
-          <td>&nbsp;</td>
-          <td>&nbsp;</td>
-        </tr>
+            <td><label for="image_file">背景</label></td>
+            <td><input type="file" accept="image/*" id="image_file"></td>
+            <td><span id="message_span">message</span></td>
+          </tr>
           <!--
           <tr>
             <td><label for="afile">効果音</label></td>
@@ -82,19 +80,25 @@ function main() {
       node.querySelector('#image_file').addEventListener('change', (evt) => {
         _loadImage();
       }, false);
-    
+
       node.querySelector('#gum_pannel_button').addEventListener('click', (evt) => {
         _debuglog('pannel open/close');
         _openClosePanel();
-      })
+      }, false);
+
+      node.querySelector('#gum_position_button').addEventListener('click', (evt) => {
+        _debuglog('pannel top/bottom');
+        _changePanelPositon();
+      }, false)
     } catch (e) {
       console.error('_insertPanel() ERROR:', e);
     }
   }
 
   let panelVisible = false;
+  let panelPositionTop = true;
   function _openClosePanel() {
-    panelVisible = (! panelVisible);
+    panelVisible = (!panelVisible);
     if (panelVisible) {
       document.getElementById('gum_control').style.display = 'block';
       document.getElementById('gum_pannel_button').innerText = '[-]';
@@ -102,6 +106,21 @@ function main() {
     else {
       document.getElementById('gum_control').style.display = 'none';
       document.getElementById('gum_pannel_button').innerText = '[+]';
+    }
+  }
+
+  function _changePanelPositon() {
+    panelPositionTop = (!panelPositionTop);
+    const pannelDiv = document.getElementById('gum_panel');
+    if (panelPositionTop) {
+      pannelDiv.style.top = '2px';
+      pannelDiv.style.bottom = '';
+      document.getElementById('gum_position_button').innerText = '[_]';
+    }
+    else {
+      pannelDiv.style.top = '';
+      pannelDiv.style.bottom = '2px';
+      document.getElementById('gum_position_button').innerText = '[^]';
     }
   }
 
@@ -244,12 +263,12 @@ function main() {
   }
 
   function _setupCanvasSize(constraints) {
-    if( constraints.video?.advanced) {
+    if (constraints.video?.advanced) {
       constraints.video?.advanced.forEach(item => {
-        if(item.width?.min) {
+        if (item.width?.min) {
           canvas.width = item.width.min;
         }
-        if(item.height?.min) {
+        if (item.height?.min) {
           canvas.height = item.height.min;
         }
       });
@@ -260,7 +279,7 @@ function main() {
       video.width = canvas.width;
       video.height = canvas.height;
 
-      _debuglog('advanced canvas width,height=', canvas.width, canvas.height, video.width, video.height );
+      _debuglog('advanced canvas width,height=', canvas.width, canvas.height, video.width, video.height);
 
       return;
     }
@@ -290,7 +309,7 @@ function main() {
     video.width = canvas.width;
     video.height = canvas.height;
 
-    _debuglog('canvas width,height=', canvas.width, canvas.height, video.width, video.height );
+    _debuglog('canvas width,height=', canvas.width, canvas.height, video.width, video.height);
   }
 
   function _startVideoFileStream(withVideo, withAudio) {

@@ -1,8 +1,8 @@
 {
   "manifest_version": 2,
-  "name": "gUM injection",
+  "name": "Chrome Virtual Camera",
   "version": "1.0",
-  "description": "getUserMedia() を差し替えて、時計や動画ファイルを利用する",
+  "description": "getUserMedia() を差し替えて、時計や動画ファイル、BodyPixを利用",
   "icons": {
     "16": "icon16.png",
     "48": "icon48.png"
