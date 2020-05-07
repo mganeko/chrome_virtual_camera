@@ -43,7 +43,7 @@ function main() {
   function _insertPanel(node) {
     try {
       const html1 =
-        `<div id="gum_panel" style="border: 1px solid blue; position: absolute; left:2px; top:2px;  z-index: 1; background-color: rgba(192, 250, 250, 0.5);">
+        `<div id="gum_panel" style="border: 1px solid blue; position: absolute; left:2px; top:2px;  z-index: 2001; background-color: rgba(192, 250, 250, 0.5);">
         <div id="gum_pannel_button">[+]</div>
         <table id="gum_control" style="display: none;">
           <tr>
@@ -165,6 +165,8 @@ function main() {
       _showMessage('load image');
       const url = window.URL.createObjectURL(file);
       img.src = url;
+
+      _setVideoType('mask_image');
     }
   }
 
@@ -200,6 +202,7 @@ function main() {
 
   function _modifiedGetUserMedia(constraints) {
     const select = document.getElementById('video_type');
+    _debuglog('GUM constraints:', constraints);
 
     // --- video constraints ---
     const withVideo = !(!constraints.video);
@@ -241,6 +244,27 @@ function main() {
   }
 
   function _setupCanvasSize(constraints) {
+    if( constraints.video?.advanced) {
+      constraints.video?.advanced.forEach(item => {
+        if(item.width?.min) {
+          canvas.width = item.width.min;
+        }
+        if(item.height?.min) {
+          canvas.height = item.height.min;
+        }
+      });
+      //canvas.width = 1280;
+      //canvas.height = 720;
+      canvasFront.width = canvas.width;
+      canvasFront.height = canvas.height;
+      video.width = canvas.width;
+      video.height = canvas.height;
+
+      _debuglog('advanced canvas width,height=', canvas.width, canvas.height, video.width, video.height );
+
+      return;
+    }
+
     if (constraints.video?.width?.exact) {
       canvas.width = constraints.video.width.exact;
     }
@@ -263,8 +287,10 @@ function main() {
 
     canvasFront.width = canvas.width;
     canvasFront.height = canvas.height;
+    video.width = canvas.width;
+    video.height = canvas.height;
 
-    _debuglog('canvas width,height=', canvas.width, canvas.height);
+    _debuglog('canvas width,height=', canvas.width, canvas.height, video.width, video.height );
   }
 
   function _startVideoFileStream(withVideo, withAudio) {
@@ -424,20 +450,25 @@ function main() {
   }
 
   function _startBodyPixStream(withVideo, withAudio, constraints) {
+    _bodyPixMask = null;
+    _backPixMask = null;
+
     return new Promise((resolve, reject) => {
       if (!withVideo) {
         // NEED video
         reject('NEED video for Boxypix mask');
       }
 
-      //reject('NOT SUPPORTED YET');
-
-      //_debuglog('_startBodyPixStream() video:', video);
       navigator.mediaDevices._getUserMedia(constraints).
         then(async (stream) => {
           video.srcObject = stream;
-          video.width = 640;
-          video.height = 480;
+          video.onloadedmetadata = () => {
+            _debuglog('loadedmetadata videoWidht,videoHeight', video.videoWidth, video.videoHeight);
+            video.width = video.videoWidth;
+            video.height = video.videoHeight;
+            img.width = video.width;
+            img.height = video.height;
+          }
           await video.play().catch(err => console.error('local play ERROR:', err));
           video.volume = 0.0;
 
@@ -476,20 +507,25 @@ function main() {
           resolve(canvasStream);
         })
         .catch(err => {
-          console.error('media ERROR:', err);
+          _debuglog('_startBodyPixStream() media ERROR:', err);
           reject(err);
         });
     });
   }
 
   function _updateCanvasWithMask() {
-    if (_maskType === 'back_image') {
-      _drawBack(img);
-      _drawFront(video);
-      _imposeFront();
+    try {
+      if (_maskType === 'back_image') {
+        _drawBack(img);
+        _drawFront(video);
+        _imposeFront();
+      }
+      else {
+        _drawCanvas(video);
+      }
     }
-    else {
-      _drawCanvas(video);
+    catch (err) {
+      _debuglog('bodypix draw ERR:', err);
     }
 
     if (keepAnimation) {
