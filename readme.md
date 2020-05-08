@@ -1,7 +1,7 @@
 # Chrome Vritual Camera
 
 navigator.mediaDevices.getUserMedia()をフックし、ダミーの時計や動画ファイルを流すことができるChrome Extensionです。
-[tfjsのBoxyPix](https://github.com/tensorflow/tfjs-models/tree/master/body-pix)を利用した人物の検出、背景マスクができます。
+[tfjs/body-pix](https://github.com/tensorflow/tfjs-models/tree/master/body-pix)を利用した人物の検出、背景マスクができます。
 
 Chrome extention for virtual camera, using hook of navigator.mediaDevices.getUserMedia()
 
@@ -49,9 +49,9 @@ Chrome extention for virtual camera, using hook of navigator.mediaDevices.getUse
   - デバイス ... マシンのカメラ/マイクを利用
   - ファイル ... 動画ファイルを選択し、その映像/音声を利用  
   - 時計 ... Canvas/WebAudioを利用した、デジタル時計
-  - 背景を塗りつぶし ... [BodyPix](https://github.com/tensorflow/tfjs-models/tree/master/body-pix)を利用して人物を検出、背景をグレーで塗りつぶす
-  - 背景を画像で隠す ... [BodyPix](https://github.com/tensorflow/tfjs-models/tree/master/body-pix)を利用して人物を検出、背景を画像ファイルで隠す
-  - 人物を塗りつぶし ... [BodyPix](https://github.com/tensorflow/tfjs-models/tree/master/body-pix)を利用して人物を検出、人物をグレーで塗りつぶす
+  - 背景を塗りつぶし ... [body-pix](https://github.com/tensorflow/tfjs-models/tree/master/body-pix)を利用して人物を検出、背景をグレーで塗りつぶす
+  - 背景を画像で隠す ... [body-pix](https://github.com/tensorflow/tfjs-models/tree/master/body-pix)を利用して人物を検出、背景を画像ファイルで隠す
+  - 人物を塗りつぶし ... [body-pix](https://github.com/tensorflow/tfjs-models/tree/master/body-pix)を利用して人物を検出、人物をグレーで塗りつぶす
 - 動画ファイルや背景の画像ファイルを選ぶ
   - 方式が「ファイル」の場合、動画ファイルを選択
   - 方式が「背景を画像で隠す」の場合、背景の画像ファイルを選択
