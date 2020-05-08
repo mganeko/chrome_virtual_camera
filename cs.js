@@ -1,4 +1,7 @@
-//console.info('cs.js');
+// Chrome Virtual Camera Extension
+//   mganeko https://github.com/mganeko/chrome_virtual_camera
+//  MIT LICENSE
+
 
 // TODO:
 //   - DONE: stop Animation
@@ -460,8 +463,7 @@ function main() {
     option3.innerText = '人物を塗りつぶし';
     select.appendChild(option3);
 
-
-    select.value = 'mask_background';
+    //select.value = 'mask_background';
   }
 
   function _bodypix_setMask(type) {
