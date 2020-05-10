@@ -432,6 +432,7 @@ function main() {
   //let isConnected = false;
   let _maskType = 'room';
   let _backPixMask = null;
+  let _segmentation = null;
 
   async function _bodypix_loadModel() {
     const net = await bodyPix.load(/** optional arguments, see below **/);
@@ -537,9 +538,11 @@ function main() {
   function _updateCanvasWithMask() {
     try {
       if (_maskType === 'back_image') {
-        _drawBack(img);
-        _drawFront(video);
-        _imposeFront();
+        // _drawBack(img);
+        // _drawFront(video);
+        // _imposeFront();
+
+        _drawFrontBackToCanvas(canvas, _segmentation, video, img) // canvas, segmentation, front, back
       }
       else {
         _drawCanvas(video);
@@ -597,6 +600,44 @@ function main() {
     ctx.drawImage(canvasFront, 0, 0);
   }
 
+  function _drawFrontBackToCanvas(canvas, segmentation, frontElement, backElement) {
+    if (!segmentation) {
+      return;
+    }
+
+    const ctx = canvasCtx; //canvas.getContext("2d");
+    //canvas.width = img.width;
+    //canvas.height = img.height;
+    const width = canvas.width;
+    const height = canvas.height;
+    ctx.drawImage(frontElement, 0, 0);
+    const front_img = ctx.getImageData(0, 0, width, height);
+    ctx.drawImage(backElement, 0, 0);
+    //const bg_img = ctx.getImageData(0, 0, width, height);
+
+    let imageData = ctx.getImageData(0, 0, width, height);
+    let pixels = imageData.data;
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        let base = (y * width + x) * 4;
+        let segbase = y * width + x;
+        if (segmentation.data[segbase] == 1) { // is fg
+          pixels[base + 0] = front_img.data[base + 0];
+          pixels[base + 1] = front_img.data[base + 1];
+          pixels[base + 2] = front_img.data[base + 2];
+          pixels[base + 3] = front_img.data[base + 3];
+        } else {
+          // pixels[base + 0] = bg_img.data[base + 0];
+          // pixels[base + 1] = bg_img.data[base + 1];
+          // pixels[base + 2] = bg_img.data[base + 2];
+          // pixels[base + 3] = bg_img.data[base + 3];
+        }
+      }
+    }
+    ctx.putImageData(imageData, 0, 0);
+  }
+
+
   function _bodypix_updateSegment() {
     const segmeteUpdateTime = 10; // ms
     if (!_bodyPixNet) {
@@ -641,18 +682,21 @@ function main() {
           _backPixMask = null;
         }
         else if (_maskType === 'back_image') {
-          const fgColor = { r: 0, g: 0, b: 0, a: 0 };
-          const bgColor = { r: 0, g: 0, b: 0, a: 255 };
-          const personPartImage = bodyPix.toMask(segmentation, fgColor, bgColor);
-          _bodyPixMask = personPartImage;
+          // const fgColor = { r: 0, g: 0, b: 0, a: 0 };
+          // const bgColor = { r: 0, g: 0, b: 0, a: 255 };
+          // const personPartImage = bodyPix.toMask(segmentation, fgColor, bgColor);
+          // _bodyPixMask = personPartImage;
+          // const fgColor2 = { r: 0, g: 0, b: 0, a: 255 };
+          // const bgColor2 = { r: 0, g: 0, b: 0, a: 0 };
+          // _backPixMask = bodyPix.toMask(segmentation, fgColor2, bgColor2);
 
-          const fgColor2 = { r: 0, g: 0, b: 0, a: 255 };
-          const bgColor2 = { r: 0, g: 0, b: 0, a: 0 };
-          _backPixMask = bodyPix.toMask(segmentation, fgColor2, bgColor2);
+
+          _segmentation = segmentation;
         }
         else {
           _bodyPixMask = null;
           _backPixMask = null;
+          _segmentation = null;
         }
 
         if (keepAnimation) {
