@@ -622,7 +622,7 @@ function main() {
     const option = {
       flipHorizontal: false,
       internalResolution: 'medium',
-      segmentationThreshold: 0.7,
+      segmentationThreshold: 0.9, //0.7,
       maxDetections: 4,
       scoreThreshold: 0.5,
       nmsRadius: 20,
