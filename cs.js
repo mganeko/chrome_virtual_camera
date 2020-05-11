@@ -432,6 +432,7 @@ function main() {
   //let isConnected = false;
   let _maskType = 'room';
   let _backPixMask = null;
+  let _segmentation = null;
 
   async function _bodypix_loadModel() {
     const net = await bodyPix.load(/** optional arguments, see below **/);
@@ -537,9 +538,7 @@ function main() {
   function _updateCanvasWithMask() {
     try {
       if (_maskType === 'back_image') {
-        _drawBack(img);
-        _drawFront(video);
-        _imposeFront();
+        _drawFrontBackToCanvas(canvas, _segmentation, video, img) // canvas, segmentation, front, back
       }
       else {
         _drawCanvas(video);
@@ -569,33 +568,49 @@ function main() {
     );
   }
 
-  function _drawFront(srcElement) {
-    const opacity = 1;
-    const flipHorizontal = false;
-    const maskBlurAmount = 0;
+  function _drawFrontBackToCanvas(canvas, segmentation, frontElement, backElement) {
+    if (!segmentation) {
+      return;
+    }
 
-    bodyPix.drawMask(
-      canvasFront, srcElement, _bodyPixMask,
-      opacity, maskBlurAmount,
-      flipHorizontal);
+    const ctx = canvasCtx; //canvas.getContext("2d");
+    //canvas.width = img.width;
+    //canvas.height = img.height;
+    const width = canvas.width;
+    const height = canvas.height;
+    ctx.drawImage(frontElement, 0, 0);
+    const front_img = ctx.getImageData(0, 0, width, height);
+    ctx.drawImage(backElement, 0, 0);
+    //const bg_img = ctx.getImageData(0, 0, width, height);
+
+    let imageData = ctx.getImageData(0, 0, width, height);
+    let pixels = imageData.data;
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        let base = (y * width + x) * 4;
+        let segbase = y * width + x;
+        if (segmentation.data[segbase] == 1) { // is fg
+          // --- 前景 ---
+          pixels[base + 0] = front_img.data[base + 0];
+          pixels[base + 1] = front_img.data[base + 1];
+          pixels[base + 2] = front_img.data[base + 2];
+          pixels[base + 3] = front_img.data[base + 3];
+
+          //// --- 背景と前景半透明 ---
+          // pixels[base + 0] = _mix(pixels[base + 0], front_img.data[base + 0]);
+          // pixels[base + 1] = _mix(pixels[base + 1], front_img.data[base + 1]);
+          // pixels[base + 2] = _mix(pixels[base + 2], front_img.data[base + 2]);
+          // pixels[base + 3] = 255;
+        }
+      }
+    }
+    ctx.putImageData(imageData, 0, 0);
+
+    // function _mix(a, b) {
+    //   return (a + b) / 2;
+    // }
   }
 
-  function _drawBack(srcElement) {
-    const opacity = 1;
-    const flipHorizontal = false;
-    const maskBlurAmount = 0;
-
-    bodyPix.drawMask(
-      canvas, srcElement, _backPixMask,
-      opacity, maskBlurAmount,
-      flipHorizontal);
-  }
-
-  function _imposeFront() {
-    const ctx = canvas.getContext('2d');
-    ctx.globalCompositeOperation = 'lighter';
-    ctx.drawImage(canvasFront, 0, 0);
-  }
 
   function _bodypix_updateSegment() {
     const segmeteUpdateTime = 10; // ms
@@ -641,18 +656,12 @@ function main() {
           _backPixMask = null;
         }
         else if (_maskType === 'back_image') {
-          const fgColor = { r: 0, g: 0, b: 0, a: 0 };
-          const bgColor = { r: 0, g: 0, b: 0, a: 255 };
-          const personPartImage = bodyPix.toMask(segmentation, fgColor, bgColor);
-          _bodyPixMask = personPartImage;
-
-          const fgColor2 = { r: 0, g: 0, b: 0, a: 255 };
-          const bgColor2 = { r: 0, g: 0, b: 0, a: 0 };
-          _backPixMask = bodyPix.toMask(segmentation, fgColor2, bgColor2);
+          _segmentation = segmentation;
         }
         else {
           _bodyPixMask = null;
           _backPixMask = null;
+          _segmentation = null;
         }
 
         if (keepAnimation) {

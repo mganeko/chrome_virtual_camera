@@ -10,6 +10,7 @@ Chrome extention for virtual camera, using hook of navigator.mediaDevices.getUse
 - https://techblog.securesky-tech.com/entry/2020/04/30/
 - https://github.com/hasegawayosuke/vitamin-meeeeet (MIT LICENSE)
 - https://github.com/tensorflow/tfjs-models/tree/master/body-pix (Apache 2.0 LICENSE)
+- https://qiita.com/knok/items/b3eb87769151ac04efeb
 
 ## リポジトリ
 
