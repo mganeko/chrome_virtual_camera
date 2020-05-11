@@ -201,8 +201,8 @@ function main() {
     const textLeft = parseInt(canvas.width / 10);
     canvasCtx.font = fontHeight + 'px serif'; //'128px serif';
 
-    //canvasCtx.fillStyle = 'rgb(255,255,255)';
-    canvasCtx.fillStyle = 'rgb(240,240,240)';
+    canvasCtx.fillStyle = 'rgb(255,255,255)';
+    //canvasCtx.fillStyle = 'rgb(240,240,240)';
     canvasCtx.fillRect(textLeft - 2, (textTop - fontHeight) - 2, fontHeight * 5 + 20, fontHeight + 8);
     canvasCtx.fillStyle = 'rgb(0,0,255)';
     canvasCtx.fillText(strTime, textLeft, textTop);
