@@ -538,10 +538,6 @@ function main() {
   function _updateCanvasWithMask() {
     try {
       if (_maskType === 'back_image') {
-        // _drawBack(img);
-        // _drawFront(video);
-        // _imposeFront();
-
         _drawFrontBackToCanvas(canvas, _segmentation, video, img) // canvas, segmentation, front, back
       }
       else {
@@ -572,34 +568,6 @@ function main() {
     );
   }
 
-  function _drawFront(srcElement) {
-    const opacity = 1;
-    const flipHorizontal = false;
-    const maskBlurAmount = 0;
-
-    bodyPix.drawMask(
-      canvasFront, srcElement, _bodyPixMask,
-      opacity, maskBlurAmount,
-      flipHorizontal);
-  }
-
-  function _drawBack(srcElement) {
-    const opacity = 1;
-    const flipHorizontal = false;
-    const maskBlurAmount = 0;
-
-    bodyPix.drawMask(
-      canvas, srcElement, _backPixMask,
-      opacity, maskBlurAmount,
-      flipHorizontal);
-  }
-
-  function _imposeFront() {
-    const ctx = canvas.getContext('2d');
-    ctx.globalCompositeOperation = 'lighter';
-    ctx.drawImage(canvasFront, 0, 0);
-  }
-
   function _drawFrontBackToCanvas(canvas, segmentation, frontElement, backElement) {
     if (!segmentation) {
       return;
@@ -622,19 +590,25 @@ function main() {
         let base = (y * width + x) * 4;
         let segbase = y * width + x;
         if (segmentation.data[segbase] == 1) { // is fg
+          // --- 前景 ---
           pixels[base + 0] = front_img.data[base + 0];
           pixels[base + 1] = front_img.data[base + 1];
           pixels[base + 2] = front_img.data[base + 2];
           pixels[base + 3] = front_img.data[base + 3];
-        } else {
-          // pixels[base + 0] = bg_img.data[base + 0];
-          // pixels[base + 1] = bg_img.data[base + 1];
-          // pixels[base + 2] = bg_img.data[base + 2];
-          // pixels[base + 3] = bg_img.data[base + 3];
+
+          //// --- 背景と前景半透明 ---
+          // pixels[base + 0] = _mix(pixels[base + 0], front_img.data[base + 0]);
+          // pixels[base + 1] = _mix(pixels[base + 1], front_img.data[base + 1]);
+          // pixels[base + 2] = _mix(pixels[base + 2], front_img.data[base + 2]);
+          // pixels[base + 3] = 255;
         }
       }
     }
     ctx.putImageData(imageData, 0, 0);
+
+    // function _mix(a, b) {
+    //   return (a + b) / 2;
+    // }
   }
 
 
@@ -682,15 +656,6 @@ function main() {
           _backPixMask = null;
         }
         else if (_maskType === 'back_image') {
-          // const fgColor = { r: 0, g: 0, b: 0, a: 0 };
-          // const bgColor = { r: 0, g: 0, b: 0, a: 255 };
-          // const personPartImage = bodyPix.toMask(segmentation, fgColor, bgColor);
-          // _bodyPixMask = personPartImage;
-          // const fgColor2 = { r: 0, g: 0, b: 0, a: 255 };
-          // const bgColor2 = { r: 0, g: 0, b: 0, a: 0 };
-          // _backPixMask = bodyPix.toMask(segmentation, fgColor2, bgColor2);
-
-
           _segmentation = segmentation;
         }
         else {
