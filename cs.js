@@ -53,10 +53,10 @@ function main() {
             <td><label for="video_file">動画</label></td>
             <td><input type="file" accept="video/mp4,video/webm" id="video_file"></td>
             <td>
-              <select id="video_type" title="切り替え後はいったんカメラをオフ→オンにする必要があります。">
-                <option value="camera">デバイス</option>
+              <select id="video_type" title="Google Meetではいったんカメラをオフ→オンにする必要があります。">
+                <option value="camera" selected="1">デバイス</option>
                 <option value="file">ファイル</option>
-                <option value="clock" selected="1">時計</option>
+                <option value="clock">時計</option>
               </select>
             </td>
           </tr>
@@ -582,7 +582,19 @@ function main() {
     const height = canvas.height;
     ctx.drawImage(frontElement, 0, 0);
     const front_img = ctx.getImageData(0, 0, width, height);
-    ctx.drawImage(backElement, 0, 0);
+    //ctx.drawImage(backElement, 0, 0); // clop
+    if(backElement.complete) {
+      const srcWidth = backElement.naturalWidth ? backElement.naturalWidth : backElement.width;
+      const srcHeight = backElement.naturalHeight ? backElement.naturalHeight : backElement.height;
+      ctx.drawImage(backElement, 0, 0, srcWidth, srcHeight,
+        0, 0, width, height
+      ); // rezise src --> dest
+    }
+    else {
+      ctx.fillRect(0, 0, width, height);
+    }
+
+    
     //const bg_img = ctx.getImageData(0, 0, width, height);
 
     let imageData = ctx.getImageData(0, 0, width, height);
