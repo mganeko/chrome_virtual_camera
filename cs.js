@@ -490,6 +490,8 @@ function main() {
             video.height = video.videoHeight;
             img.width = video.width;
             img.height = video.height;
+            canvas.width = video.width;
+            canvas.height = video.height;
           }
           await video.play().catch(err => console.error('local play ERROR:', err));
           video.volume = 0.0;
@@ -622,7 +624,7 @@ function main() {
     const option = {
       flipHorizontal: false,
       internalResolution: 'medium',
-      segmentationThreshold: 0.9, //0.7,
+      segmentationThreshold: 0.7, //0.9, //0.7,
       maxDetections: 4,
       scoreThreshold: 0.5,
       nmsRadius: 20,
