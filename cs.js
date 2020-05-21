@@ -57,6 +57,7 @@ function main() {
                 <option value="camera" selected="1">デバイス</option>
                 <option value="file">ファイル</option>
                 <option value="clock">時計</option>
+                <option value="screen">画面キャプチャー</option>
               </select>
             </td>
           </tr>
@@ -259,6 +260,10 @@ function main() {
       _bodypix_setMask('back_image');
       return _startBodyPixStream(withVideo, withAudio, constraints);
     }
+    else if(select?.value === 'screen') {
+      _showMessage('use screen capture (displayMedia)');
+      return _startScreenStream(withVideo, withAudio, constraints);
+    }
     else {
       _showMessage('use device');
       return navigator.mediaDevices._getUserMedia(constraints);
@@ -421,6 +426,56 @@ function main() {
       osc.start(audioCtx.currentTime + (beepInterval - beepDuration));
       osc.stop(audioCtx.currentTime + beepInterval);
     }
+  }
+
+  function _startScreenStream(withVideo, withAudio, constraints) {
+    return new Promise((resolve, reject) => {
+      let stream = null;
+
+      if ((!withVideo) && (!withAudio)) {
+        // Nothing
+        reject('NO video/audio specified');
+      }
+
+      if (withVideo) {
+        navigator.mediaDevices.getDisplayMedia({video:true})
+        .then(displayStream => {
+          _debuglog('get DisplayStream');
+          stream = displayStream;
+
+          if (withAudio) {
+            constraints.video = false;
+            navigator.mediaDevices._getUserMedia(constraints).
+            then(audioStream => {
+              const audioTrack = audioStream.getAudioTracks()[0];
+              stream.addTrack(audioTrack);
+            })
+            .catch(err => {
+              _debuglog('_startScreenStream() audio ERROR:', err);
+              if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+              }
+              reject(err);
+            });
+          }
+
+          resolve(stream);
+        })
+        .catch(err => {
+          _debuglog('_startScreenStream() media ERROR:', err);
+          recject(err)
+        });
+      }
+      else if (withAudio) { // --- audio only ---
+        navigator.mediaDevices._getUserMedia(constraints).
+        then(audioStream => {
+          resolve(audioStream);
+        })
+        .catch(err => {
+          reject(err);
+        });
+      }
+    });
   }
 
   // ------- bodypix -------
