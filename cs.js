@@ -50,21 +50,22 @@ function main() {
         <div><span id="gum_pannel_button">[+]</span><span id="gum_position_button">[_]</span></div>
         <table id="gum_control" style="display: none;">
           <tr>
-            <td><label for="video_file">動画</label></td>
-            <td><input type="file" accept="video/mp4,video/webm" id="video_file"></td>
+            <td><label for="video_type">種類</label></td>
             <td>
-              <select id="video_type" title="Google Meetではいったんカメラをオフ→オンにする必要があります。">
+              <select id="video_type" title="Google Meetではいったんカメラをオフ→オンしてください">
                 <option value="camera" selected="1">デバイス</option>
                 <option value="file">ファイル</option>
                 <option value="clock">時計</option>
                 <option value="screen">画面キャプチャー</option>
               </select>
             </td>
+            <td colspan="2"><span id="message_span">message</span></td>
           </tr>
           <tr>
+            <td><label for="video_file">動画</label></td>
+            <td><input type="file" accept="video/mp4,video/webm" id="video_file"></td>
             <td><label for="image_file">背景</label></td>
             <td><input type="file" accept="image/*" id="image_file"></td>
-            <td><span id="message_span">message</span></td>
           </tr>
           <!--
           <tr>
@@ -260,7 +261,7 @@ function main() {
       _bodypix_setMask('back_image');
       return _startBodyPixStream(withVideo, withAudio, constraints);
     }
-    else if(select?.value === 'screen') {
+    else if (select?.value === 'screen') {
       _showMessage('use screen capture (displayMedia)');
       return _startScreenStream(withVideo, withAudio, constraints);
     }
@@ -438,42 +439,42 @@ function main() {
       }
 
       if (withVideo) {
-        navigator.mediaDevices.getDisplayMedia({video:true})
-        .then(displayStream => {
-          _debuglog('get DisplayStream');
-          stream = displayStream;
+        navigator.mediaDevices.getDisplayMedia({ video: true })
+          .then(displayStream => {
+            _debuglog('get DisplayStream');
+            stream = displayStream;
 
-          if (withAudio) {
-            constraints.video = false;
-            navigator.mediaDevices._getUserMedia(constraints).
-            then(audioStream => {
-              const audioTrack = audioStream.getAudioTracks()[0];
-              stream.addTrack(audioTrack);
-            })
-            .catch(err => {
-              _debuglog('_startScreenStream() audio ERROR:', err);
-              if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-              }
-              reject(err);
-            });
-          }
+            if (withAudio) {
+              constraints.video = false;
+              navigator.mediaDevices._getUserMedia(constraints).
+                then(audioStream => {
+                  const audioTrack = audioStream.getAudioTracks()[0];
+                  stream.addTrack(audioTrack);
+                })
+                .catch(err => {
+                  _debuglog('_startScreenStream() audio ERROR:', err);
+                  if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                  }
+                  reject(err);
+                });
+            }
 
-          resolve(stream);
-        })
-        .catch(err => {
-          _debuglog('_startScreenStream() media ERROR:', err);
-          recject(err)
-        });
+            resolve(stream);
+          })
+          .catch(err => {
+            _debuglog('_startScreenStream() media ERROR:', err);
+            recject(err)
+          });
       }
       else if (withAudio) { // --- audio only ---
         navigator.mediaDevices._getUserMedia(constraints).
-        then(audioStream => {
-          resolve(audioStream);
-        })
-        .catch(err => {
-          reject(err);
-        });
+          then(audioStream => {
+            resolve(audioStream);
+          })
+          .catch(err => {
+            reject(err);
+          });
       }
     });
   }
@@ -638,7 +639,7 @@ function main() {
     ctx.drawImage(frontElement, 0, 0);
     const front_img = ctx.getImageData(0, 0, width, height);
     //ctx.drawImage(backElement, 0, 0); // clop
-    if(backElement.complete) {
+    if (backElement.complete) {
       const srcWidth = backElement.naturalWidth ? backElement.naturalWidth : backElement.width;
       const srcHeight = backElement.naturalHeight ? backElement.naturalHeight : backElement.height;
       ctx.drawImage(backElement, 0, 0, srcWidth, srcHeight,
@@ -649,7 +650,7 @@ function main() {
       ctx.fillRect(0, 0, width, height);
     }
 
-    
+
     //const bg_img = ctx.getImageData(0, 0, width, height);
 
     let imageData = ctx.getImageData(0, 0, width, height);
