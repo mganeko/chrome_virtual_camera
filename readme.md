@@ -46,22 +46,23 @@ Chrome extention for virtual camera, using hook of navigator.mediaDevices.getUse
   - [_]ボタン ... クリックすると、パネルが左下に移動
   - [^]ボタン ... クリックすると、パネルが左上に移動
 - [+]ボタンをクリックして、パネルの中身を表示
-- ドロップダウンリストで、方式を選択
+- ドロップダウンリストで、種類を選択
   - デバイス ... マシンのカメラ/マイクを利用
   - ファイル ... 動画ファイルを選択し、その映像/音声を利用  
   - 時計 ... Canvas/WebAudioを利用した、デジタル時計
+  - 画面キャプチャー ... getDisplayMedia()を利用した、画面キャプチャーを利用（全画面/アプリ画面）
   - 背景を塗りつぶし ... [body-pix](https://github.com/tensorflow/tfjs-models/tree/master/body-pix)を利用して人物を検出、背景をグレーで塗りつぶす
   - 背景を画像で隠す ... [body-pix](https://github.com/tensorflow/tfjs-models/tree/master/body-pix)を利用して人物を検出、背景を画像ファイルで隠す
   - 人物を塗りつぶし ... [body-pix](https://github.com/tensorflow/tfjs-models/tree/master/body-pix)を利用して人物を検出、人物をグレーで塗りつぶす
 - 動画ファイルや背景の画像ファイルを選ぶ
-  - 方式が「ファイル」の場合、動画ファイルを選択
-  - 方式が「背景を画像で隠す」の場合、背景の画像ファイルを選択
+  - 種類が「ファイル」の場合、動画ファイルを選択
+  - 種類が「背景を画像で隠す」の場合、背景の画像ファイルを選択
 - 対象サイトで、カメラ映像/マイク音声の取得を開始、通信を開始
   - mediaDevices.getUserMedia()が呼び出されると、フックした処理が動く
 　- 選択した方式の映像、音声が取得される
 
 パネルの中身を表示したところ
-![パネルの画像](pannel.png) 
+![パネルの画像](panel.png) 
 
 ### 注意点
 
