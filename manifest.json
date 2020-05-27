@@ -12,9 +12,7 @@
       "matches": [
         "http://localhost:*/*",
         "http://127.0.0.1:*/*",
-        "https://mganeko.github.io/*",
-        "https://meet.google.com/*",
-        "https://sora-labo.shiguredo.jp/*"
+        "https://*/*"
       ],
       "js": [
         "loader.js"
@@ -23,11 +21,9 @@
     }
   ],
   "permissions": [
-    "https://localhost:*/",
-    "https://127.0.0.1:*/",
-    "https://mganeko.github.io/",
-    "https://meet.google.com/",
-    "https://sora-labo.shiguredo.jp/"
+    "http://localhost:*/",
+    "http://127.0.0.1:*/",
+    "https://*/*"
   ],
   "web_accessible_resources": [
     "cs.js"
