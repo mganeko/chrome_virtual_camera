@@ -13,8 +13,7 @@
         "http://localhost:*/*",
         "http://127.0.0.1:*/*",
         "https://mganeko.github.io/*",
-        "https://meet.google.com/*",
-        "https://sora-labo.shiguredo.jp/*"
+        "https://meet.google.com/*"
       ],
       "js": [
         "loader.js"
@@ -26,8 +25,7 @@
     "http://localhost:*/",
     "http://127.0.0.1:*/",
     "https://mganeko.github.io/",
-    "https://meet.google.com/",
-    "https://sora-labo.shiguredo.jp/"
+    "https://meet.google.com/"
   ],
   "web_accessible_resources": [
     "cs.js"
