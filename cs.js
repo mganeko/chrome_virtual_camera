@@ -16,15 +16,15 @@
 //   - DONE: background image
 //   - DONE: canvas&image size variable
 //   - DONE: static switch jp/en
-//   - dynamic switch jp/en
+//   - DONE: dynamic switch ja/en (by navigator.language)
 
 function main() {
   'use strict'
   //const PRINT_DEBUG_LOG = true;
   const PRINT_DEBUG_LOG = false;
 
-  const LANG_TYPE = 'jp';
-  //const LANG_TYPE = 'en';
+  const LANG_TYPE = navigator.language; // en, en-US, ja
+  _debuglog('lang=' + LANG_TYPE);
 
   if (navigator.mediaDevices._getUserMedia !== undefined) return;
   const video = document.createElement('video');
@@ -50,10 +50,13 @@ function main() {
   // --- ファイル選択GUIを挿入 ---
   function _insertPanel(node) {
     try {
-      const html_jp =
+      const html_ja =
         `<div id="gum_panel" style="border: 1px solid blue; position: absolute; left:2px; top:2px;  z-index: 2001; background-color: rgba(192, 250, 192, 0.7);">
         <div><span id="gum_pannel_button">[+]</span><span id="gum_position_button">[_]</span></div>
         <table id="gum_control" style="display: none;">
+          <tr>
+            <td colspan="4">Chrome Virtual Camera extension</td>
+          </tr>
           <tr>
             <td><label for="video_type">種類</label></td>
             <td>
@@ -86,7 +89,10 @@ function main() {
         <div><span id="gum_pannel_button">[+]</span><span id="gum_position_button">[_]</span></div>
         <table id="gum_control" style="display: none;">
           <tr>
-            <td><label for="video_type">Type</label></td>
+           <td colspan="4">Chrome Virtual Camera extension</td>
+          </tr>
+          <tr>
+            <td><label for="video_type">type</label></td>
             <td>
               <select id="video_type" title="Please Off --> On your camera, for Google Meet">
                 <option value="camera" selected="1">device</option>
@@ -113,8 +119,8 @@ function main() {
         </table>
         </div>`;
 
-      if (LANG_TYPE == 'jp') {
-        node.insertAdjacentHTML('beforeend', html_jp);
+      if (LANG_TYPE == 'ja') {
+        node.insertAdjacentHTML('beforeend', html_ja);
       }
       else {
         node.insertAdjacentHTML('beforeend', html_en);
@@ -560,7 +566,7 @@ function main() {
     option3.value = 'mask_person';
     select.appendChild(option3);
 
-    if (LANG_TYPE === 'jp') {
+    if (LANG_TYPE === 'ja') {
       option1.innerText = '背景を塗りつぶし';
       option2.innerText = '背景を画像でマスク';
       option3.innerText = '人物を塗りつぶし';
