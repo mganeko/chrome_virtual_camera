@@ -1,11 +1,13 @@
 {
   "manifest_version": 2,
   "name": "Chrome Virtual Camera",
+  "short_name": "Virtial Cam",
   "version": "1.0",
   "description": "hook getUserMedia() / getUserMedia() を差し替え、時計や動画ファイル、tfjs/body-pixを利用した背景マスクが可能",
   "icons": {
     "16": "icon16.png",
-    "48": "icon48.png"
+    "48": "icon48.png",
+    "128": "icon128.png"
   },
   "content_scripts": [
     {
