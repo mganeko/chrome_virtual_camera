@@ -84,7 +84,7 @@ function main() {
           -->
         </table>
         </div>`;
-        const html_en =
+      const html_en =
         `<div id="gum_panel" style="border: 1px solid blue; position: absolute; left:2px; top:2px;  z-index: 2001; background-color: rgba(192, 250, 192, 0.7);">
         <div><span id="gum_pannel_button">[+]</span><span id="gum_position_button">[_]</span></div>
         <table id="gum_control" style="display: none;">
@@ -284,6 +284,13 @@ function main() {
 
     // --- audio constraints ---
     const withAudio = !(!constraints.audio);
+
+    // --- bypass for desktop capture ---
+    if (constraints?.video?.mandatory?.chromeMediaSource === 'desktop') {
+      _debuglog('GUM start Desktop Capture');
+      _showMessage('use device for Desktop Catpure');
+      return navigator.mediaDevices._getUserMedia(constraints);
+    }
 
     // --- start media ---
     if (select?.value === 'file') {
