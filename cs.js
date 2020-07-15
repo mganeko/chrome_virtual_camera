@@ -285,6 +285,13 @@ function main() {
     // --- audio constraints ---
     const withAudio = !(!constraints.audio);
 
+    // --- bypass for desktop capture ---
+    if (constraints?.video?.mandatory?.chromeMediaSource === 'desktop') {
+      _debuglog('GUM start Desktop Capture');
+      _showMessage('use device for Desktop Catpure');
+      return navigator.mediaDevices._getUserMedia(constraints);
+    }
+
     // --- start media ---
     if (select?.value === 'file') {
       _showMessage('use video file');
