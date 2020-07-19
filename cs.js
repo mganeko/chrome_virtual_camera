@@ -20,8 +20,8 @@
 
 function main() {
   'use strict'
-  const PRINT_DEBUG_LOG = true;
-  //const PRINT_DEBUG_LOG = false;
+  //const PRINT_DEBUG_LOG = true;
+  const PRINT_DEBUG_LOG = false;
 
   const LANG_TYPE = navigator.language; // en, en-US, ja
   _debuglog('lang=' + LANG_TYPE);
@@ -712,7 +712,7 @@ function main() {
     }
 
     // -- force select ---
-    select.value = 'mask_display';
+    //select.value = 'mask_display';
   }
 
   function _bodypix_setMask(type) {
@@ -909,7 +909,7 @@ function main() {
     let pixels = imageData.data;
 
     // -- front scale ---
-    const ratio = 0.25;
+    const ratio = 0.5; //0.25;
     const backWidth = width;
 
     //const scale = 1; // OK
