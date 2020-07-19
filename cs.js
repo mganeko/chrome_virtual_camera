@@ -543,17 +543,19 @@ function main() {
   function _startDisplaykOverlayStream(withVideo, withAudio, constraints) {
     // TODO
     // - start
-    //   - カメラデバイスの映像を取得 --> streamDevice, videoに表示
-    //   - 画面キャブチャー --> streamScreen, videoBackgroundに表示
-    //   - cavas.captureStream() --> stream
-    //   - streamDeviceのAudioTrack --> stream.addTrack()
+    //   - DONE: カメラデバイスの映像を取得 --> streamDevice, videoに表示
+    //   - DONE: 画面キャブチャー --> streamScreen, videoBackgroundに表示
+    //   - DONE: cavas.captureStream() --> stream
+    //   - DONE: streamDeviceのAudioTrack --> stream.addTrack()
     // - draw
-    //   - updateSegment (video)
-    //   - videoBackround --> cavas (ctx.drawImage)
-    //   - video --> canvas (setPixel)
+    //   - DONE: updateSegment (video)
+    //   - DONE: videoBackround --> cavas (ctx.drawImage)
+    //   - DONE: video --> canvas (setPixel)
     //   - ※サイズ調整は？
+    //     - screen > camera, screen < camera
+    //     - position (left-top, right-top, left-bottom, right-bottom)
     // - stop
-    //   - stream-videoTrack-stop() --> streamDevice-videoTrack-stop() & streamScreen.videoTrack.stop()
+    //   - DONE: stream-videoTrack-stop() --> streamDevice-videoTrack-stop() & streamScreen.videoTrack.stop()
     //       & video.pause(), videoBackground.pause(), animation=false
 
     _bodyPixMask = null;
@@ -904,9 +906,22 @@ function main() {
     const loopHeight = Math.min(frontHeight, height);
     let imageData = ctx.getImageData(0, 0, width, height);
     let pixels = imageData.data;
+    // --- front positon: left-top --
+    //const frontOffsetX = 0;
+    //const frontOffsetY = 0;
+    // --- front positon: right-top --
+    //const offsetX = (width - frontWidth);
+    //const offsetY = 0;
+    // --- front positon: right-bottom --
+    //const offsetX = (width - frontWidth);
+    //const offsetY = (height - frontHeight);
+    // --- front positon: right-bottom, if possible --
+    const offsetX = (width > frontWidth) ? (width - frontWidth) : 0;
+    const offsetY = (height > frontHeight) ? (height - frontHeight) : 0;
+
     for (let y = 0; y < loopHeight; y++) {
       for (let x = 0; x < loopWidth; x++) {
-        const backBase = (y * width + x) * 4;
+        const backBase = ((y + offsetY) * width + x + offsetX) * 4;
         const frontBase = (y * frontWidth + x) * 4;
         let segbase = y * frontWidth + x;
         if (segmentation.data[segbase] == 1) { // is fg
