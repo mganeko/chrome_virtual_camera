@@ -711,8 +711,8 @@ function main() {
       option3.innerText = 'overlay peson on display';
     }
 
-
-    //select.value = 'mask_background';
+    // -- force select ---
+    select.value = 'mask_display';
   }
 
   function _bodypix_setMask(type) {
@@ -887,7 +887,7 @@ function main() {
     const width = canvas.width;
     const height = canvas.height;
     ctx.drawImage(frontElement, 0, 0);
-    const front_img = ctx.getImageData(0, 0, frontWidth, frontHeight);
+    const front_img = ctx.getImageData(0, 0, frontWidth, frontHeight); // WARN: if canvas is too small, front_image is cropped
     //return; front draw OK, but not size adjusted
 
     if (backElement.readyState > 0) {
@@ -901,11 +901,29 @@ function main() {
       ctx.fillRect(0, 0, width, height);
     }
     // return; // back draw OK
+    if ((frontWidth === 0) || (frontHeight === 0)) {
+      return;
+    }
 
-    const loopWidth = Math.min(frontWidth, width);
-    const loopHeight = Math.min(frontHeight, height);
     let imageData = ctx.getImageData(0, 0, width, height);
     let pixels = imageData.data;
+
+    // -- front scale ---
+    const ratio = 0.25;
+    const backWidth = width;
+
+    //const scale = 1; // OK
+    //const scale = 0.5; // OK
+    //const scale = 0.4; // OK
+    //const scale = 0.56; // OK
+
+    //ratio = (frontWidth * scale) / backWidth;
+    const scale = ratio * backWidth / frontWidth; // NG
+    _debuglog('scale=' + scale);
+
+    const scaledFrontWidth = Math.floor(frontWidth * scale);
+    const scaledFrontHeight = Math.floor(frontHeight * scale);
+
     // --- front positon: left-top --
     //const frontOffsetX = 0;
     //const frontOffsetY = 0;
@@ -916,14 +934,26 @@ function main() {
     //const offsetX = (width - frontWidth);
     //const offsetY = (height - frontHeight);
     // --- front positon: right-bottom, if possible --
-    const offsetX = (width > frontWidth) ? (width - frontWidth) : 0;
-    const offsetY = (height > frontHeight) ? (height - frontHeight) : 0;
+    //const offsetX = (width > frontWidth) ? (width - frontWidth) : 0;
+    //const offsetY = (height > frontHeight) ? (height - frontHeight) : 0;
 
+    // --- front positon: right-bottom, scaled --
+    const offsetX = (width > scaledFrontWidth) ? (width - scaledFrontWidth) : 0;
+    const offsetY = (height > scaledFrontHeight) ? (height - scaledFrontHeight) : 0;
+
+    //const loopWidth = Math.min(frontWidth, width);
+    //const loopHeight = Math.min(frontHeight, height);
+    const loopWidth = Math.min(scaledFrontWidth, width);
+    const loopHeight = Math.min(scaledFrontHeight, height);
     for (let y = 0; y < loopHeight; y++) {
       for (let x = 0; x < loopWidth; x++) {
         const backBase = ((y + offsetY) * width + x + offsetX) * 4;
-        const frontBase = (y * frontWidth + x) * 4;
-        let segbase = y * frontWidth + x;
+        //const frontBase = (y * frontWidth + x) * 4;
+        //let segbase = y * frontWidth + x;
+        //const segbase = Math.floor((y / scale) * frontWidth + (x / scale)); // NG
+        const segbase = Math.floor(y / scale) * frontWidth + Math.floor(x / scale); //OK
+        const frontBase = segbase * 4;
+
         if (segmentation.data[segbase] == 1) { // is fg
           // --- 前景 ---
           pixels[backBase + 0] = front_img.data[frontBase + 0];
