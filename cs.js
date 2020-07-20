@@ -557,6 +557,8 @@ function main() {
     // - stop
     //   - DONE: stream-videoTrack-stop() --> streamDevice-videoTrack-stop() & streamScreen.videoTrack.stop()
     //       & video.pause(), videoBackground.pause(), animation=false
+    // - BUG
+    //   - STACK OVERFLOW after using while (windows10)
 
     _bodyPixMask = null;
     _backPixMask = null;
