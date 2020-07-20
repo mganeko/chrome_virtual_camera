@@ -54,6 +54,7 @@ Chrome extention for virtual camera, using hook of navigator.mediaDevices.getUse
   - 背景を塗りつぶし ... [body-pix](https://github.com/tensorflow/tfjs-models/tree/master/body-pix)を利用して人物を検出、背景をグレーで塗りつぶす
   - 背景を画像で隠す ... [body-pix](https://github.com/tensorflow/tfjs-models/tree/master/body-pix)を利用して人物を検出、背景を画像ファイルで隠す
   - 人物を塗りつぶし ... [body-pix](https://github.com/tensorflow/tfjs-models/tree/master/body-pix)を利用して人物を検出、人物をグレーで塗りつぶす
+  - 画面に人物を合成 ... カメラ映像から人物を切り抜き、画面キャプチャーの右下に合成して表示
 - 動画ファイルや背景の画像ファイルを選ぶ
   - 種類が「ファイル」の場合、動画ファイルを選択
   - 種類が「背景を画像で隠す」の場合、背景の画像ファイルを選択
@@ -70,7 +71,7 @@ Chrome extention for virtual camera, using hook of navigator.mediaDevices.getUse
   - そのページをリロードせずに再度カメラ/マイクの取得を行うと、フックが有効になる
 - Google Meet もロードと同時にカメラ/マイクを取得するので、これに該当する
   - パネルで方式を選択後、カメラオフ →　カメラオン に切り替えると、フックが有効になる
-
+- 対象サイトの表示されるウィンドウ/タブが完全に隠れると requestAnimationFrame()の更新が止まるため、カメラ映像から取得した人物が停止します
 
 ## LICENSE / ライセンス
 

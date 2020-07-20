@@ -28,6 +28,7 @@ function main() {
 
   if (navigator.mediaDevices._getUserMedia !== undefined) return;
   const video = document.createElement('video');
+  const videoBackground = document.createElement('video');
   const canvas = document.createElement('canvas');
   const canvasFront = document.createElement('canvas');
   const img = document.createElement('img');
@@ -84,7 +85,7 @@ function main() {
           -->
         </table>
         </div>`;
-        const html_en =
+      const html_en =
         `<div id="gum_panel" style="border: 1px solid blue; position: absolute; left:2px; top:2px;  z-index: 2001; background-color: rgba(192, 250, 192, 0.7);">
         <div><span id="gum_pannel_button">[+]</span><span id="gum_position_button">[_]</span></div>
         <table id="gum_control" style="display: none;">
@@ -316,6 +317,11 @@ function main() {
       _bodypix_setMask('back_image');
       return _startBodyPixStream(withVideo, withAudio, constraints);
     }
+    else if (select?.value === 'mask_display') {
+      _showMessage('use bodypix (overlay display)');
+      _bodypix_setMask('overlay_display');
+      return _startDisplaykOverlayStream(withVideo, withAudio, constraints);
+    }
     else if (select?.value === 'screen') {
       _showMessage('use screen capture (displayMedia)');
       return _startScreenStream(withVideo, withAudio, constraints);
@@ -534,6 +540,120 @@ function main() {
     });
   }
 
+  function _startDisplaykOverlayStream(withVideo, withAudio, constraints) {
+    // TODO
+    // - start
+    //   - DONE: カメラデバイスの映像を取得 --> streamDevice, videoに表示
+    //   - DONE: 画面キャブチャー --> streamScreen, videoBackgroundに表示
+    //   - DONE: cavas.captureStream() --> stream
+    //   - DONE: streamDeviceのAudioTrack --> stream.addTrack()
+    // - draw
+    //   - DONE: updateSegment (video)
+    //   - DONE: videoBackround --> cavas (ctx.drawImage)
+    //   - DONE: video --> canvas (setPixel)
+    //   - ※サイズ調整は？
+    //     - screen > camera, screen < camera
+    //     - position (left-top, right-top, left-bottom, right-bottom)
+    // - stop
+    //   - DONE: stream-videoTrack-stop() --> streamDevice-videoTrack-stop() & streamScreen.videoTrack.stop()
+    //       & video.pause(), videoBackground.pause(), animation=false
+
+    _bodyPixMask = null;
+    _backPixMask = null;
+
+    return new Promise((resolve, reject) => {
+      //let stream = null;
+
+      if (!withVideo) {
+        // NEED video
+        reject('NEED video for Boxypix mask');
+      }
+
+      // --- withVideo ---
+      navigator.mediaDevices._getUserMedia(constraints).
+        then(async (deviceStream) => {
+          _debuglog('got device stream');
+
+          // --- device stream and videoPix
+          video.srcObject = deviceStream;
+          video.onloadedmetadata = () => {
+            _debuglog('loadedmetadata videoWidht,videoHeight', video.videoWidth, video.videoHeight);
+            video.width = video.videoWidth;
+            video.height = video.videoHeight;
+            img.width = video.width;
+            img.height = video.height;
+            //canvas.width = video.width;
+            //canvas.height = video.height;
+          }
+          await video.play().catch(err => console.error('local play ERROR:', err));
+          video.volume = 0.0;
+
+          // ---- screen stream ---
+          const displayStream = await navigator.mediaDevices.getDisplayMedia({ video: true }).catch(err => {
+            video.pause();
+            deviceStream.getTracks().forEach(track => track.stop());
+            reject('display Capture ERROR');
+          });
+          _debuglog('got display stream');
+          videoBackground.srcObject = displayStream;
+          videoBackground.onloadedmetadata = () => {
+            _debuglog('videoBackground loadedmetadata videoWidht,videoHeight', videoBackground.videoWidth, videoBackground.videoHeight);
+            videoBackground.width = videoBackground.videoWidth;
+            videoBackground.height = videoBackground.videoHeight;
+            //img.width = video.width;
+            //img.height = video.height;
+            canvas.width = videoBackground.width;
+            canvas.height = videoBackground.height;
+          }
+          await videoBackground.play().catch(err => console.error('videoBackground play ERROR:', err));
+          videoBackground.volume = 0.0;
+
+          // ----- canvas stream ----
+          _clearCanvas();
+          requestAnimationFrame(_updateCanvasWithMask);
+          const canvasStream = canvas.captureStream(10);
+          if (!canvasStream) {
+            reject('canvas Capture ERROR');
+          }
+          keepAnimation = true;
+          _bodypix_updateSegment();
+          const videoTrack = canvasStream.getVideoTracks()[0];
+          if (videoTrack) {
+            videoTrack._stop = videoTrack.stop;
+            videoTrack.stop = function () {
+              _debuglog('camvas stream stop');
+              keepAnimation = false;
+              videoTrack._stop();
+              _debuglog('stop device track');
+              deviceStream.getTracks().forEach(track => {
+                track.stop();
+              });
+              _debuglog('stop display track');
+              displayStream.getTracks().forEach(track => {
+                track.stop();
+              });
+            };
+          }
+
+          // --- for audio ---
+          if (withAudio) {
+            const audioTrack = stream.getAudioTracks()[0];
+            if (audioTrack) {
+              canvasStream.addTrack(audioTrack);
+            }
+            else {
+              _debuglog('WARN: NO audio in device stream');
+            }
+          }
+
+          resolve(canvasStream);
+        })
+        .catch(err => {
+          reject(err);
+        });
+    });
+  }
+
   // ------- bodypix -------
   let _bodyPixNet = null;
   //let animationId = null;
@@ -573,19 +693,26 @@ function main() {
     option3.value = 'mask_person';
     select.appendChild(option3);
 
+    // display overlay
+    const option4 = document.createElement('option');
+    option4.value = 'mask_display';
+    select.appendChild(option4);
+
     if (LANG_TYPE === 'ja') {
       option1.innerText = '背景を塗りつぶし';
       option2.innerText = '背景を画像でマスク';
       option3.innerText = '人物を塗りつぶし';
+      option4.innerText = '画面に人物を合成';
     }
     else {
       option1.innerText = 'mask backgroud with gray';
       option2.innerText = 'mask backgroud with image';
       option3.innerText = 'mask peson with gray';
+      option3.innerText = 'overlay peson on display';
     }
 
-
-    //select.value = 'mask_background';
+    // -- force select ---
+    //select.value = 'mask_display';
   }
 
   function _bodypix_setMask(type) {
@@ -663,6 +790,9 @@ function main() {
       if (_maskType === 'back_image') {
         _drawFrontBackToCanvas(canvas, _segmentation, video, img) // canvas, segmentation, front, back
       }
+      else if (_maskType === 'overlay_display') {
+        _drawDisplayOverlayToCanvas(canvas, _segmentation, video, videoBackground) // canvas, segmentation, front, back
+      }
       else {
         _drawCanvas(video);
       }
@@ -704,7 +834,7 @@ function main() {
     ctx.drawImage(frontElement, 0, 0);
     const front_img = ctx.getImageData(0, 0, width, height);
     //ctx.drawImage(backElement, 0, 0); // clop
-    if (backElement.complete) {
+    if (backElement.complete) { // asume as imageElement
       const srcWidth = backElement.naturalWidth ? backElement.naturalWidth : backElement.width;
       const srcHeight = backElement.naturalHeight ? backElement.naturalHeight : backElement.height;
       ctx.drawImage(backElement, 0, 0, srcWidth, srcHeight,
@@ -746,6 +876,95 @@ function main() {
     // }
   }
 
+  function _drawDisplayOverlayToCanvas(canvas, segmentation, frontElement, backElement) {
+    if (!segmentation) {
+      return;
+    }
+    const frontWidth = frontElement.videoWidth;
+    const frontHeight = frontElement.videoHeight;
+
+    const ctx = canvasCtx; //canvas.getContext("2d");
+    const width = canvas.width;
+    const height = canvas.height;
+    ctx.drawImage(frontElement, 0, 0);
+    const front_img = ctx.getImageData(0, 0, frontWidth, frontHeight); // WARN: if canvas is too small, front_image is cropped
+    //return; front draw OK, but not size adjusted
+
+    if (backElement.readyState > 0) {
+      const srcWidth = backElement.videoWidth ? backElement.videoWidth : backElement.width;
+      const srcHeight = backElement.videolHeight ? backElement.videolHeight : backElement.height;
+      ctx.drawImage(backElement, 0, 0, srcWidth, srcHeight,
+        0, 0, width, height
+      ); // rezise src --> dest
+    }
+    else {
+      ctx.fillRect(0, 0, width, height);
+    }
+    // return; // back draw OK
+    if ((frontWidth === 0) || (frontHeight === 0)) {
+      return;
+    }
+
+    let imageData = ctx.getImageData(0, 0, width, height);
+    let pixels = imageData.data;
+
+    // -- front scale ---
+    const ratio = 0.5; //0.25;
+    const backWidth = width;
+
+    //const scale = 1; // OK
+    //const scale = 0.5; // OK
+    //const scale = 0.4; // OK
+    //const scale = 0.56; // OK
+
+    //ratio = (frontWidth * scale) / backWidth;
+    const scale = ratio * backWidth / frontWidth; // NG
+    _debuglog('scale=' + scale);
+
+    const scaledFrontWidth = Math.floor(frontWidth * scale);
+    const scaledFrontHeight = Math.floor(frontHeight * scale);
+
+    // --- front positon: left-top --
+    //const frontOffsetX = 0;
+    //const frontOffsetY = 0;
+    // --- front positon: right-top --
+    //const offsetX = (width - frontWidth);
+    //const offsetY = 0;
+    // --- front positon: right-bottom --
+    //const offsetX = (width - frontWidth);
+    //const offsetY = (height - frontHeight);
+    // --- front positon: right-bottom, if possible --
+    //const offsetX = (width > frontWidth) ? (width - frontWidth) : 0;
+    //const offsetY = (height > frontHeight) ? (height - frontHeight) : 0;
+
+    // --- front positon: right-bottom, scaled --
+    const offsetX = (width > scaledFrontWidth) ? (width - scaledFrontWidth) : 0;
+    const offsetY = (height > scaledFrontHeight) ? (height - scaledFrontHeight) : 0;
+
+    //const loopWidth = Math.min(frontWidth, width);
+    //const loopHeight = Math.min(frontHeight, height);
+    const loopWidth = Math.min(scaledFrontWidth, width);
+    const loopHeight = Math.min(scaledFrontHeight, height);
+    for (let y = 0; y < loopHeight; y++) {
+      for (let x = 0; x < loopWidth; x++) {
+        const backBase = ((y + offsetY) * width + x + offsetX) * 4;
+        //const frontBase = (y * frontWidth + x) * 4;
+        //let segbase = y * frontWidth + x;
+        //const segbase = Math.floor((y / scale) * frontWidth + (x / scale)); // NG
+        const segbase = Math.floor(y / scale) * frontWidth + Math.floor(x / scale); //OK
+        const frontBase = segbase * 4;
+
+        if (segmentation.data[segbase] == 1) { // is fg
+          // --- 前景 ---
+          pixels[backBase + 0] = front_img.data[frontBase + 0];
+          pixels[backBase + 1] = front_img.data[frontBase + 1];
+          pixels[backBase + 2] = front_img.data[frontBase + 2];
+          pixels[backBase + 3] = front_img.data[frontBase + 3];
+        }
+      }
+    }
+    ctx.putImageData(imageData, 0, 0);
+  }
 
   function _bodypix_updateSegment() {
     const segmeteUpdateTime = 10; // ms
@@ -791,6 +1010,9 @@ function main() {
           _backPixMask = null;
         }
         else if (_maskType === 'back_image') {
+          _segmentation = segmentation;
+        }
+        else if (_maskType === 'overlay_display') {
           _segmentation = segmentation;
         }
         else {
