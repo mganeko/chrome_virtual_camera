@@ -20,8 +20,8 @@
 
 function main() {
   'use strict'
-  //const PRINT_DEBUG_LOG = true;
-  const PRINT_DEBUG_LOG = false;
+  const PRINT_DEBUG_LOG = true;
+  //const PRINT_DEBUG_LOG = false;
 
   const LANG_TYPE = navigator.language; // en, en-US, ja
   _debuglog('lang=' + LANG_TYPE);
@@ -288,9 +288,17 @@ function main() {
 
     // --- bypass for desktop capture ---
     if (constraints?.video?.mandatory?.chromeMediaSource === 'desktop') {
-      _debuglog('GUM start Desktop Capture');
-      _showMessage('use device for Desktop Catpure');
-      return navigator.mediaDevices._getUserMedia(constraints);
+      if (select?.value === 'mask_meet_display') {
+        // -- overlay person on google meet desplay --
+        _showMessage('use bodypix (overlay meet display)');
+        _bodypix_setMask('overlay_meet_display');
+        return _startMeetDisplayOverlayStream(withVideo, withAudio, constraints);
+      }
+      else {
+        _debuglog('GUM start Desktop Capture');
+        _showMessage('use device for Desktop Catpure');
+        return navigator.mediaDevices._getUserMedia(constraints);
+      }
     }
 
     // --- start media ---
@@ -320,6 +328,14 @@ function main() {
     else if (select?.value === 'mask_display') {
       _showMessage('use bodypix (overlay display)');
       _bodypix_setMask('overlay_display');
+      return _startDisplayOverlayStream(withVideo, withAudio, constraints);
+    }
+    else if (select?.value === 'mask_meet_display') {
+      _showMessage('use bodypix (overlay meet display)');
+      _debuglog('WARN: this mode is for Google Meet'); // This is not Google Meet
+      _bodypix_setMask('overlay_display');
+
+      // -- use normal _startDisplayOverlayStream() for other App. --
       return _startDisplayOverlayStream(withVideo, withAudio, constraints);
     }
     else if (select?.value === 'screen') {
@@ -564,7 +580,7 @@ function main() {
     _backPixMask = null;
 
     return new Promise((resolve, reject) => {
-      //let stream = null;
+      let stream = null;
 
       if (!withVideo) {
         // NEED video
@@ -639,6 +655,11 @@ function main() {
 
           // --- for audio ---
           if (withAudio) {
+            // TODO : NOT supported yet
+            _debuglog('display overlay with audio');
+            if (!stream) {
+              reject('Display Overlay NOT Support Audio YET');
+            }
             const audioTrack = stream.getAudioTracks()[0];
             if (audioTrack) {
               canvasStream.addTrack(audioTrack);
@@ -658,7 +679,119 @@ function main() {
 
   // --- meet用 ---
   // Google Meet 用
+  //  - gUM with chromeMediaSource === 'desktop'
+  //  - gUM with device video (if not yet)
+  //    - if device video already exist, clone? (TODO)
+  //  - same as DisplayOverlayStream
   function _startMeetDisplayOverlayStream(withVideo, withAudio, constraints) {
+    _debuglog('Google Meet Diplay Overlay')
+
+    // -- temp ---
+    //return _startDisplayOverlayStream(withVideo, withAudio, constraints);
+
+
+    _bodyPixMask = null;
+    _backPixMask = null;
+
+    return new Promise((resolve, reject) => {
+      if (!withVideo) {
+        // NEED video
+        reject('NEED video for Boxypix mask');
+      }
+      if (constraints?.video?.mandatory?.chromeMediaSource !== 'desktop') {
+        // NOT Google Meet
+        reject('NOT using Google Meet');
+      }
+      if (withAudio) {
+        _debuglog('WARN: with Audio NOT Supported correctly');
+      }
+
+      // TODO support using video already
+      if (video.srcObject) {
+        _debuglog('WARN: ALREADY using Device video. NOT working corrent');
+      }
+
+      // --- withVideo ---
+      const constraintsForCamera = { video: true, audio: false };
+      navigator.mediaDevices._getUserMedia(constraintsForCamera).
+        then(async (deviceStream) => {
+          _debuglog('got device stream');
+
+          // --- device stream and videoPix
+          stream = deviceStream;
+          video.srcObject = deviceStream;
+          video.onloadedmetadata = () => {
+            _debuglog('loadedmetadata videoWidht,videoHeight', video.videoWidth, video.videoHeight);
+            video.width = video.videoWidth;
+            video.height = video.videoHeight;
+            img.width = video.width;
+            img.height = video.height;
+            //canvas.width = video.width;
+            //canvas.height = video.height;
+          }
+          await video.play().catch(err => console.error('local play ERROR:', err));
+          video.volume = 0.0;
+
+          // ---- screen stream for google meet---
+          const displayStream = await navigator.mediaDevices._getUserMedia(constraints).catch(err => {
+            video.pause();
+            deviceStream.getTracks().forEach(track => track.stop());
+            reject('display Capture ERROR');
+          });
+          _debuglog('got display stream');
+          videoBackground.srcObject = displayStream;
+          videoBackground.onloadedmetadata = () => {
+            _debuglog('videoBackground loadedmetadata videoWidht,videoHeight', videoBackground.videoWidth, videoBackground.videoHeight);
+            videoBackground.width = videoBackground.videoWidth;
+            videoBackground.height = videoBackground.videoHeight;
+            //img.width = video.width;
+            //img.height = video.height;
+            canvas.width = videoBackground.width;
+            canvas.height = videoBackground.height;
+          }
+          await videoBackground.play().catch(err => console.error('videoBackground play ERROR:', err));
+          videoBackground.volume = 0.0;
+
+          // ----- canvas stream ----
+          _clearCanvas();
+          requestAnimationFrame(_updateCanvasWithMask);
+          const canvasStream = canvas.captureStream(10);
+          if (!canvasStream) {
+            reject('canvas Capture ERROR');
+          }
+          keepAnimation = true;
+          _bodypix_updateSegment();
+          const videoTrack = canvasStream.getVideoTracks()[0];
+          if (videoTrack) {
+            videoTrack._stop = videoTrack.stop;
+            videoTrack.stop = function () {
+              _debuglog('camvas stream stop');
+              keepAnimation = false;
+              videoTrack._stop();
+              _debuglog('stop device track');
+              deviceStream.getTracks().forEach(track => {
+                track.stop();
+              });
+              _debuglog('stop display track');
+              displayStream.getTracks().forEach(track => {
+                track.stop();
+              });
+            };
+          }
+
+          // --- for audio ---
+          if (withAudio) {
+            // TODO : NOT supported yet
+            _debuglog('WARN: display meet overlay with audio');
+            // must use audio.mandatory.chromeMediaSource.system
+          }
+
+          resolve(canvasStream);
+        })
+        .catch(err => {
+          reject(err);
+        });
+    });
   }
 
   // ------- bodypix -------
@@ -705,21 +838,28 @@ function main() {
     option4.value = 'mask_display';
     select.appendChild(option4);
 
+    // meet display overlay
+    const option5 = document.createElement('option');
+    option5.value = 'mask_meet_display';
+    select.appendChild(option5);
+
     if (LANG_TYPE === 'ja') {
       option1.innerText = '背景を塗りつぶし';
       option2.innerText = '背景を画像でマスク';
       option3.innerText = '人物を塗りつぶし';
       option4.innerText = '画面に人物を合成';
+      option5.innerText = '画面に人物を合成(Meet)';
     }
     else {
       option1.innerText = 'mask backgroud with gray';
       option2.innerText = 'mask backgroud with image';
       option3.innerText = 'mask peson with gray';
-      option3.innerText = 'overlay peson on display';
+      option4.innerText = 'overlay peson on display';
+      option5.innerText = 'overlay peson on Meet display';
     }
 
     // -- force select ---
-    //select.value = 'mask_display';
+    //select.value = 'mask_meet_display';
   }
 
   function _bodypix_setMask(type) {
@@ -798,6 +938,9 @@ function main() {
         _drawFrontBackToCanvas(canvas, _segmentation, video, img) // canvas, segmentation, front, back
       }
       else if (_maskType === 'overlay_display') {
+        _drawDisplayOverlayToCanvas(canvas, _segmentation, video, videoBackground) // canvas, segmentation, front, back
+      }
+      else if (_maskType === 'overlay_meet_display') {
         _drawDisplayOverlayToCanvas(canvas, _segmentation, video, videoBackground) // canvas, segmentation, front, back
       }
       else {
@@ -1046,6 +1189,9 @@ function main() {
           _segmentation = segmentation;
         }
         else if (_maskType === 'overlay_display') {
+          _segmentation = segmentation;
+        }
+        else if (_maskType === 'overlay_meet_display') {
           _segmentation = segmentation;
         }
         else {
