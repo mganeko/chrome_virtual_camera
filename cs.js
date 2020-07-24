@@ -718,7 +718,7 @@ function main() {
           _debuglog('got device stream');
 
           // --- device stream and videoPix
-          stream = deviceStream;
+          //stream = deviceStream;
           video.srcObject = deviceStream;
           video.onloadedmetadata = () => {
             _debuglog('loadedmetadata videoWidht,videoHeight', video.videoWidth, video.videoHeight);
@@ -733,7 +733,9 @@ function main() {
           video.volume = 0.0;
 
           // ---- screen stream for google meet---
+          _debuglog('getting display stream');
           const displayStream = await navigator.mediaDevices._getUserMedia(constraints).catch(err => {
+            debuglog('get display stream ERROR');
             video.pause();
             deviceStream.getTracks().forEach(track => track.stop());
             reject('display Capture ERROR');
@@ -784,6 +786,14 @@ function main() {
             // TODO : NOT supported yet
             _debuglog('WARN: display meet overlay with audio');
             // must use audio.mandatory.chromeMediaSource.system
+            const audioTrack = displayStream.getAudioTracks()[0];
+            if (audioTrack) {
+              canvasStream.addTrack(audioTrack);
+            }
+            else {
+              _debuglog('WARN: NO audio in Display stream');
+            }
+
           }
 
           resolve(canvasStream);
