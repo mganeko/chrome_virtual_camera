@@ -320,7 +320,7 @@ function main() {
     else if (select?.value === 'mask_display') {
       _showMessage('use bodypix (overlay display)');
       _bodypix_setMask('overlay_display');
-      return _startDisplaykOverlayStream(withVideo, withAudio, constraints);
+      return _startDisplayOverlayStream(withVideo, withAudio, constraints);
     }
     else if (select?.value === 'screen') {
       _showMessage('use screen capture (displayMedia)');
@@ -540,7 +540,7 @@ function main() {
     });
   }
 
-  function _startDisplaykOverlayStream(withVideo, withAudio, constraints) {
+  function _startDisplayOverlayStream(withVideo, withAudio, constraints) {
     // TODO
     // - start
     //   - DONE: カメラデバイスの映像を取得 --> streamDevice, videoに表示
@@ -954,7 +954,7 @@ function main() {
         //let segbase = y * frontWidth + x;
         //const segbase = Math.floor((y / scale) * frontWidth + (x / scale)); // NG
         const segbase = Math.floor(y / scale) * frontWidth + Math.floor(x / scale); //OK
-        if (segbase >= segmentation.data.length ) {
+        if (segbase >= segmentation.data.length) {
           _debuglog('sagebase:%d >= segmatation size:%d', segbase, segmentation.data.length);
           break;
         }
@@ -990,7 +990,7 @@ function main() {
     ctx.putImageData(imageData, 0, 0);
 
     function _mix(a, b, rate) {
-      return Math.floor(a *(1-rate) + b*rate);
+      return Math.floor(a * (1 - rate) + b * rate);
     }
   }
 
