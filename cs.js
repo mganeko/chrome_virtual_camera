@@ -557,6 +557,8 @@ function main() {
     // - stop
     //   - DONE: stream-videoTrack-stop() --> streamDevice-videoTrack-stop() & streamScreen.videoTrack.stop()
     //       & video.pause(), videoBackground.pause(), animation=false
+    // - BUG
+    //   - STACK OVERFLOW after using while (windows10)
 
     _bodyPixMask = null;
     _backPixMask = null;
@@ -900,7 +902,7 @@ function main() {
     else {
       ctx.fillRect(0, 0, width, height);
     }
-    // return; // back draw OK
+    //return; // back draw OK
     if ((frontWidth === 0) || (frontHeight === 0)) {
       return;
     }
@@ -919,7 +921,7 @@ function main() {
 
     //ratio = (frontWidth * scale) / backWidth;
     const scale = ratio * backWidth / frontWidth; // NG
-    _debuglog('scale=' + scale);
+    //_debuglog('scale=' + scale);
 
     const scaledFrontWidth = Math.floor(frontWidth * scale);
     const scaledFrontHeight = Math.floor(frontHeight * scale);
@@ -952,18 +954,44 @@ function main() {
         //let segbase = y * frontWidth + x;
         //const segbase = Math.floor((y / scale) * frontWidth + (x / scale)); // NG
         const segbase = Math.floor(y / scale) * frontWidth + Math.floor(x / scale); //OK
+        if (segbase >= segmentation.data.length ) {
+          _debuglog('sagebase:%d >= segmatation size:%d', segbase, segmentation.data.length);
+          break;
+        }
         const frontBase = segbase * 4;
 
         if (segmentation.data[segbase] == 1) { // is fg
           // --- 前景 ---
+          /*--- 100% front 
           pixels[backBase + 0] = front_img.data[frontBase + 0];
           pixels[backBase + 1] = front_img.data[frontBase + 1];
           pixels[backBase + 2] = front_img.data[frontBase + 2];
           pixels[backBase + 3] = front_img.data[frontBase + 3];
+          ---*/
+
+          //*--- mix
+          pixels[backBase + 0] = _mix(pixels[backBase + 0], front_img.data[frontBase + 0], 0.9);
+          pixels[backBase + 1] = _mix(pixels[backBase + 1], front_img.data[frontBase + 1], 0.9);
+          pixels[backBase + 2] = _mix(pixels[backBase + 2], front_img.data[frontBase + 2], 0.9);
+          pixels[backBase + 3] = _mix(pixels[backBase + 3], front_img.data[frontBase + 3], 0.9);
+          //---*/
+
+          /*--
+          // --black mask ok ----
+          pixels[backBase + 0] = 0;
+          pixels[backBase + 1] = 0;
+          pixels[backBase + 2] = 0;
+          pixels[backBase + 3] = 255;
+          ---*/
         }
       }
     }
+
     ctx.putImageData(imageData, 0, 0);
+
+    function _mix(a, b, rate) {
+      return Math.floor(a *(1-rate) + b*rate);
+    }
   }
 
   function _bodypix_updateSegment() {
