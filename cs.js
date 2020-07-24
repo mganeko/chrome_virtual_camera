@@ -656,6 +656,11 @@ function main() {
     });
   }
 
+  // --- meet用 ---
+  // Google Meet 用
+  function _startMeetDisplayOverlayStream(withVideo, withAudio, constraints) {
+  }
+
   // ------- bodypix -------
   let _bodyPixNet = null;
   //let animationId = null;
