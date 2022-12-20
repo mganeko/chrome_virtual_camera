@@ -1,5 +1,5 @@
 {
-  "manifest_version": 2,
+  "manifest_version": 3,
   "name": "Chrome Virtual Camera",
   "version": "1.2",
   "description": "hook getUserMedia() / getUserMedia() を差し替え、時計や動画ファイル、tfjs/body-pixを利用した背景マスクが可能",
@@ -22,14 +22,15 @@
       "run_at": "document_start"
     }
   ],
-  "permissions": [
+  "host_permissions": [
     "http://localhost:*/",
     "http://127.0.0.1:*/",
     "https://mganeko.github.io/",
     "https://meet.google.com/",
     "https://sora-labo.shiguredo.jp/"
   ],
-  "web_accessible_resources": [
-    "cs.js"
-  ]
+  "web_accessible_resources": [{
+    "resources": ["cs.js"],
+    "matches": ["https://*/*"]
+  }]
 }
