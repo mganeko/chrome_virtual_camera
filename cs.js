@@ -121,10 +121,14 @@ function main() {
         </div>`;
 
       if (LANG_TYPE == 'ja') {
-        node.insertAdjacentHTML('beforeend', html_ja);
+        const element = document.createElement('div');
+        element.setHTML(html_ja);
+        node.appendChild(element);        
       }
       else {
-        node.insertAdjacentHTML('beforeend', html_en);
+        const element = document.createElement('div');
+        element.setHTML(html_ja);
+        node.appendChild(element);
       }
 
       node.querySelector('#video_file').addEventListener('change', (evt) => {
@@ -194,7 +198,7 @@ function main() {
   function _showMessage(str) {
     const span = document.getElementById('message_span');
     if (span) {
-      span.innerHTML = str;
+      span.innerText = str;
     }
   }
 
